@@ -25,6 +25,7 @@ training_X,testing_X,training_Y,testing_Y = cross_validation_split_with_unbalanc
 * ['1','2','3','4']: the name list of numeric features for training models
 * '5': the name of label column
 * 'id': the name of id column
+* isDT: "True" means using decision tree model, else using random forest model
 * test_size: the proportion of input dataset used for testing
 * handle_unbalance: whether or not handle unbalanced dataset using handle_unbalanced_dataset
 * folder_path: the path used for storing ".dot" files
@@ -49,6 +50,14 @@ accuracy,full_wrong_list,full_test,full_predict,label_list = DT_RF_models(megada
 ```
 full_feature_importance_RF_DF = generate_RF_feature_importance(folder_path,megadata_temp,['1','2','3','4'],'5')
 T_full_feature_importance_RF_DF = transform_feature_importance(full_feature_importance_RF_DF,label_list) 
+```
+### Plot histogram based on a list of values. 
+* 'title': the title of histogram 
+* listOfValues: the list of values used to plot histogram
+* 'outputFilePath': the storing path of the html histogram
+* bins_number: the number of bins in histogram
+```
+plot_histogram('title', listOfValues,'outputFilePath', bins_number = 1000)
 ```
 
 

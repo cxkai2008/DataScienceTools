@@ -6,6 +6,11 @@ from sklearn import tree
 from sklearn.tree import export_graphviz
 import re
 from os import listdir
+from bokeh.layouts import gridplot
+from bokeh.models import Range1d,LabelSet,Label,ColumnDataSource,HoverTool,WheelZoomTool,PanTool,BoxZoomTool,ResetTool,SaveTool,BasicTicker,ColorBar,LinearColorMapper,PrintfTickFormatter,DataSource
+from bokeh.palettes import brewer,inferno,magma,viridis,grey
+from bokeh.plotting import figure, show, output_file
+from bokeh.transform import transform,factor_cmap
 #####find distict items in two lists#####
 def findDistinct(ind1,ind2):
     # print("distict item in ind1")
@@ -213,3 +218,20 @@ def transform_feature_importance(fullFeatureImportanceDF,label_list):
     feature_importance_DF['Ability']=feature_importance_DF['max_value']*feature_importance_DF['median_value']*feature_importance_DF['sampleSize_value']*10+5
     feature_importance_DF = feature_importance_DF.sort_values(by='Ability', ascending=False) 
     return feature_importance_DF[label_list+['Sample Size','Ability']]
+
+#####plot histogram based on a list of values#####
+def plot_histogram(title, measured,outputFilePath, bins_number = 1000):
+    output_file(outputFilePath)
+    hist, edges = np.histogram(measured, density=True, bins=bins_number)
+    p = figure(title=title, plot_width = 750, plot_height = 750,tools='', background_fill_color="#fafafa")
+    p.quad(top=hist, bottom=0, left=edges[:-1], right=edges[1:],
+           fill_color="navy", line_color="white", alpha=0.5)
+    p.y_range.start = 0
+    p.legend.location = "center_right"
+    p.legend.background_fill_color = "#fefefe"
+    p.xaxis.axis_label = 'x'
+    p.yaxis.axis_label = 'Pr(x)'
+    p.grid.grid_line_color="white"
+    p.x_range = Range1d(0,1.01)
+    show(p)
+    return p
