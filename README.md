@@ -51,6 +51,8 @@ accuracy,full_wrong_list,full_test,full_predict,label_list = DT_RF_models(megada
 full_feature_importance_RF_DF = generate_RF_feature_importance(folder_path,megadata_temp,['1','2','3','4'],'5')
 T_full_feature_importance_RF_DF = transform_feature_importance(full_feature_importance_RF_DF,label_list) 
 ```
+
+## Plotting tools
 ### Plot histogram based on a list of values. 
 * 'title': the title of histogram 
 * listOfValues: the list of values used to plot histogram
