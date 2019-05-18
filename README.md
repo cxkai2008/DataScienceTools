@@ -39,13 +39,21 @@ Transform matrix to data frame with a column name list. A sub-data-frame can be 
 ```
 matrix = mtd(mtx,numeric_features, data_frame=pd.DataFrame(),basic_info_feautes=[], sort_column='ID',asc=True)
 ```
-### Data scaling. 
-Scale data based on different criteria. The scaling methods vary based on the input data. For widely ranged data this algorithm use median rather than log transformation to scale it.
+### List scaling. 
+Scale list based on different criteria. The scaling methods vary based on the input data. For widely ranged data this algorithm use median rather than log transformation to scale it.
 * lst: the input list
 * scale: the range of scaled list
 * lowerbound: the minima of the scaled list
 ```
 scaled_list = median_transform(lst,scale,lowerbound)
+```
+### Matrix scaling. 
+Scale matrix by each row or col separately. The scaling method can choose from the basic scaling method or use the method of median_transform. 
+* test: the input matrix
+* isrow: scale by each row or col
+* simple_scale: whether use the basic method or median_transform
+```
+scaled_matrix = scale_matrix(test,isrow=True,simple_scale=True)
 ```
 ## Classification tools
 ### Handle unbalanced data. 

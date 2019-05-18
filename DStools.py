@@ -11,6 +11,27 @@ from bokeh.models import Range1d,LabelSet,Label,ColumnDataSource,HoverTool,Wheel
 from bokeh.palettes import brewer,inferno,magma,viridis,grey
 from bokeh.plotting import figure, show, output_file
 from bokeh.transform import transform,factor_cmap
+#scale matrix based on row or col by simple method or median_transform
+def scale_matrix(test,isrow=True,simple_scale=True):
+    if(simple_scale):
+        if(isrow):
+            for i in range(0,len(test)):
+                test[i] = (test[i]-test[i].min())/(test[i].max() - test[i].min())
+        else:
+            test_t = np.transpose(test)
+            for i in range(0,len(test_t)):
+                test_t[i] = (test_t[i]-test_t[i].min())/(test_t[i].max() - test_t[i].min())
+            test = np.transpose(test_t)
+    else:
+        if(isrow):
+            for i in range(0,len(test)):
+                test[i] = median_transform(test[i],1,0)
+        else:
+            test_t = np.transpose(test)
+            for i in range(0,len(test_t)):
+                test_t[i] = median_transform(test[i],1,0)
+            test = np.transpose(test_t)
+    return test
 #sort data frame
 def rrd(DF,sort_column='ID',asc=True,reidx=True):
     new_DF=DF.copy()
