@@ -11,6 +11,55 @@ from bokeh.models import Range1d,LabelSet,Label,ColumnDataSource,HoverTool,Wheel
 from bokeh.palettes import brewer,inferno,magma,viridis,grey
 from bokeh.plotting import figure, show, output_file
 from bokeh.transform import transform,factor_cmap
+#sort data frame
+def rrd(DF,sort_column='ID',asc=True,reidx=True):
+    new_DF=DF.copy()
+    new_DF=DF.sort_values(by=sort_column, ascending=True)
+    if(reidx):
+        new_DF=new_DF.reset_index(drop=True)
+    return new_DF
+
+# dataframe to matrix
+def dtm(data_frame,matrix_features,sort_column='ID'):
+    data_frame_copy = data_frame.copy()
+    data_frame_copy = data_frame_copy.sort_values(by=sort_column, ascending=True)
+    mtx = data_frame_copy[matrix_features].as_matrix(columns=None)
+    return mtx
+# matrix to dataframe
+def mtd(mtx,numeric_features, data_frame=pd.DataFrame(),basic_info_feautes=[], sort_column='ID',asc=True):
+    DF = pd.DataFrame(mtx,columns=numeric_features)
+    if((data_frame.size>0)&len(basic_info_feautes)>0):
+        DF[basic_info_feautes] = rrd(data_frame,sort_column,asc).reset_index(drop=True)[basic_info_feautes]
+    return rrd(DF,sort_column)
+    
+def scale_transform1(lst1,lst2,scale,lowerbound):
+    return ((lst1-lst2.min())/np.ptp(lst2))*scale+lowerbound
+    
+def scale_transform2(lst1,lst2,scale,lowerbound):
+    return (lst1/lst2.max())*scale+lowerbound
+#scale list
+def median_transform(lst,scale,lowerbound):
+    if(len(set(lst))<2):
+        return np.full(len(lst), (scale+lowerbound)/2)
+    if(lst.max()/lst.mean()<2):
+        return 0.5*lst/lst.mean()*scale+lowerbound
+    elif((lst.max()/lst.min()<10)&(lst.mean()/lst.min()>2)):
+        return scale_transform1(lst,lst,scale,lowerbound)
+    else: 
+        scaled_list=scale_transform1(lst,lst,scale,lowerbound)
+        scaled_list = scaled_list/np.median(scaled_list)
+        lower_list=np.array([i for i in scaled_list if i<=1]).copy()
+        upper_list=np.array([i for i in scaled_list if i>1]).copy()
+        for i in range(len(scaled_list)):
+            if(scaled_list[i]<=1):
+                if(np.ptp(lower_list)==0):
+                    scaled_list[i]=0
+                else:
+                    scaled_list[i]=scale_transform1(scaled_list[i],lower_list,0.5*(scale+lowerbound),lowerbound)
+            else:
+                scaled_list[i]=scale_transform2(scaled_list[i],upper_list,0.5*(scale+lowerbound),0.5*(scale+lowerbound))
+        return scaled_list
+
 #####find distict items in two lists#####
 def findDistinct(ind1,ind2):
     # print("distict item in ind1")

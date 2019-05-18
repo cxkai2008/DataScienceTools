@@ -1,8 +1,55 @@
 # Data Science tools
 Useful data science tools in many aspects.
 
+## Data transformation tools
+### Find distinct elements of two list separately. 
+sort and reset index based on a certain index
+* ind1: the first list
+* ind2: the second list
+* disinidx1: distinct elements in the first list
+* disinidx2: distinct elements in the second list
+```
+(disinidx1,disinidx2) = findDistinct(ind1,ind2)
+```
+### Sort data frame. 
+sort and reset index based on a certain index
+* DF: the data frame which is to be sorted
+* sort_column: the sorted index
+* asc: ordered by ascending or not
+* reidx: reset index or not
+```
+sorted_DF = rrd(DF,sort_column='ID',asc,reidx)
+```
+### Data frame to matrix. 
+Transform data frame to matrix with a certain order
+* DF: the input data frame
+* matrix_features: the set of features need to be transform into matrix
+* sort_column: sort before transformation
+```
+matrix = dtm(DF,matrix_features,sort_column='ID')
+```
+### Matrix to data frame. 
+Transform matrix to data frame with a column name list. A sub-data-frame can be combined with the new generated data frame optionally.
+* mtx: the input matrix
+* numeric_features: the column names of generated matrix
+* data_frame: the data frame which is required to combine with newly generated data frame
+* basic_info_feautes: the columns of data_frame need to be combined with the new data frame
+* sort_column: the data_frame is sorted by sort_column before combination
+* asc: ordered by ascending or not
+```
+matrix = mtd(mtx,numeric_features, data_frame=pd.DataFrame(),basic_info_feautes=[], sort_column='ID',asc=True)
+```
+### Data scaling. 
+Scale data based on different criteria. The scaling methods vary based on the input data. For widely ranged data this algorithm use median rather than log transformation to scale it.
+* lst: the input list
+* scale: the range of scaled list
+* lowerbound: the minima of the scaled list
+```
+scaled_list = median_transform(lst,scale,lowerbound)
+```
 ## Classification tools
 ### Handle unbalanced data. 
+The sample size of minor categories are amplified to as many as the major category by randomly selecting 2 samples and use the average of the two as the newly generated sample.
 * megadata_temp: input dataset, contains id column and label column 
 * ['1','2','3','4']: the name list of numeric features for training models
 * '5': the name of label column
