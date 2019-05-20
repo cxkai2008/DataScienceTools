@@ -433,3 +433,319 @@ def plot_heatmap_for_kmeans_groups(data_frame,numeric_features,path,clusters=8,i
         subcorrDF.index=subcorrDF.columns
         subcorrDF=subcorrDF.T[subFeatureList].T
         plotHeatMap(subcorrDF[subFeatureList].reset_index(drop=True),strFeatureList,path+'/heatmap-'+str(k)+'.html')
+
+def plot_precision_recall_curve(full_test,full_predict,label_list,class_num=4,title='ROC curve'):
+    if(class_num==2):
+        full_test=label_binarize(full_test,classes=list(range(0,3)))
+        full_test=np.array([np.array([i[0],i[1]])   for i in full_test])
+    else:
+        full_test=label_binarize(full_test,classes=list(range(0,class_num)))
+    precision = dict()
+    recall = dict()
+    average_precision=dict()
+    for i in range(0,class_num):
+        precision[i],recall[i],_ = precision_recall_curve(full_test[:,i],full_predict[:,i])
+        average_precision[i] = average_precision_score(full_test[:,i],full_predict[:,i])
+    precision['micro'],recall['micro'],_=precision_recall_curve(full_test.ravel(),full_predict.ravel())
+    colors = cycle(['navy', 'turquoise', 'darkorange', 'cornflowerblue', 'teal'])
+    plt.figure(figsize=(7, 8))
+    labels = []
+    lines = []
+    for i, color in zip(range(class_num), colors):
+        l, = plt.plot(recall[i], precision[i], color=color, lw=2)
+        lines.append(l)
+        labels.append('Precision-recall for class {0} (AUC = {1:0.2f})'
+                      ''.format(label_list[i], average_precision[i]))
+    fig = plt.gcf()
+    fig.subplots_adjust(bottom=0.25)
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.title(title)
+    plt.legend(lines, labels, loc=(0, -.38), prop=dict(size=14))
+    plt.show()
+
+def print_precision_recall_accuracy(full_test,full_predict,label_list,class_num=4):
+    right=0
+    wrong=0
+    for i in range(len(full_test)):
+        if(np.argmax(full_predict[i])  == int(full_test[i])):
+            right =right+1
+        else:
+            wrong=wrong+1
+    print("Overall Accuray: ",right/(right+wrong))
+    for n in range(class_num):
+        tp=0
+        fp=0
+        fn=0
+        for i in range(len(full_test)):
+            if(np.argmax(full_predict[i])==n):
+                if(np.argmax(full_predict[i])  == int(full_test[i])):
+                    tp=tp+1
+                else:
+                    fp=fp+1
+            elif(int(full_test[i])==n):
+                fn=fn+1
+        print(label_list[n],"label size:",tp+fn)
+        print(label_list[n],"Recall: ",tp/(tp+fn))
+        if((tp+fp)==0):
+            print(label_list[n],"Precision: ",0)
+        else:
+            print(label_list[n],"Precision: ",tp/(tp+fp))
+
+#####Venn Predictor#####
+# This part of codes is taken from https://github.com/ptocca/VennABERS
+# Some elementary functions to speak the same language as the paper
+# (at some point we'll just replace the occurrence of the calls with the function body itself)
+def push(x,stack):
+    stack.append(x)
+
+def pop(stack):
+    return stack.pop()
+
+def top(stack):
+    return stack[-1]
+
+def nextToTop(stack):
+    return stack[-2]
+
+
+# perhaps inefficient but clear implementation
+def nonleftTurn(a,b,c):   
+    d1 = b-a
+    d2 = c-b
+    return np.cross(d1,d2)<=0
+
+def nonrightTurn(a,b,c):   
+    d1 = b-a
+    d2 = c-b
+    return np.cross(d1,d2)>=0
+
+
+def slope(a,b):
+    ax,ay = a
+    bx,by = b
+    return (by-ay)/(bx-ax)
+
+def notBelow(t,p1,p2):
+    p1x,p1y = p1
+    p2x,p2y = p2
+    tx,ty = t
+    m = (p2y-p1y)/(p2x-p1x)
+    b = (p2x*p1y - p1x*p2y)/(p2x-p1x)
+    return (ty >= tx*m+b)
+
+kPrime = None
+
+# Because we cannot have negative indices in Python (they have another meaning), I use a dictionary
+
+def algorithm1(P):
+    global kPrime
+    S = []
+    P[-1] = np.array((-1,-1))
+    push(P[-1],S)
+    push(P[0],S)
+    #put P[0] at the end of S
+    for i in range(1,kPrime+1):
+    #nextToTop(S):S[len(S)-2]  top(S):S[len(S)-1]  pop(S):drop the last element
+    #cross product for 2 dimension vector return the value of axis z
+    #cross product vector of vec1 and vec2 is the perpendicular vector with the plane consist by vec1 and vec2
+        while len(S)>1 and nonleftTurn(nextToTop(S),top(S),P[i]):
+            pop(S)
+        push(P[i],S)
+    return S
+
+def algorithm2(P,S):
+    global kPrime
+    
+    Sprime = S[::-1]     # reverse the stack
+
+    F1 = np.zeros((kPrime+1,))
+    for i in range(1,kPrime+1):
+        F1[i] = slope(top(Sprime),nextToTop(Sprime))
+        P[i-1] = P[i-2]+P[i]-P[i-1]
+        if notBelow(P[i-1],top(Sprime),nextToTop(Sprime)):
+            continue
+        pop(Sprime)
+        while len(Sprime)>1 and nonleftTurn(P[i-1],top(Sprime),nextToTop(Sprime)):
+            pop(Sprime)
+        push(P[i-1],Sprime)
+    return F1
+
+def algorithm3(P):
+    global kPrime
+    
+    P[kPrime+1] = P[kPrime]+np.array((1.0,0.0))
+
+    S = []
+    push(P[kPrime+1],S)
+    push(P[kPrime],S)
+    for i in range(kPrime-1,0-1,-1):  # k'-1,k'-2,...,0
+        while len(S)>1 and nonrightTurn(nextToTop(S),top(S),P[i]):
+            pop(S)
+        push(P[i],S)
+    return S
+
+def algorithm4(P,S):
+    global kPrime
+    
+    Sprime = S[::-1]     # reverse the stack
+    
+    F0 = np.zeros((kPrime+1,))
+    for i in range(kPrime,1-1,-1):   # k',k'-1,...,1
+        F0[i] = slope(top(Sprime),nextToTop(Sprime))
+        P[i] = P[i-1]+P[i+1]-P[i]
+        if notBelow(P[i],top(Sprime),nextToTop(Sprime)):
+            continue
+        pop(Sprime)
+        while len(Sprime)>1 and nonrightTurn(P[i],top(Sprime),nextToTop(Sprime)):
+            pop(Sprime)
+        push(P[i],Sprime)
+    return F0[1:]
+
+def prepareData(calibrPoints):
+    global kPrime
+    #sort score_label_list based on ascending score
+    ptsSorted = sorted(calibrPoints)
+    #xs score np.array, ys, label np.array, both sorted
+    xs = np.fromiter((p[0] for p in ptsSorted),float)
+    ys = np.fromiter((p[1] for p in ptsSorted),float)
+    ptsUnique,ptsIndex,ptsInverse,ptsCounts = np.unique(xs, 
+                                                        return_index=True,
+                                                        return_counts=True,
+                                                        return_inverse=True)
+    a = np.zeros(ptsUnique.shape)
+    #a: for a unique score, how many items labeled 1.
+    np.add.at(a,ptsInverse,ys)
+    # now a contains the sums of ys for each unique value of the objects
+    w = ptsCounts
+    yPrime = a/w
+    #yPrime: the purity of label for each unique score
+    yCsd = np.cumsum(w*yPrime)   # Might as well do just np.cumsum(a)
+    #yCsd accumulation of label1 through unique score list
+    xPrime = np.cumsum(w)
+    #xPrime: accumulation of observations through unique score list
+    kPrime = len(xPrime)
+    #kPrime: the number of unique scores
+    return yPrime,yCsd,xPrime,ptsUnique
+
+def computeF(xPrime,yCsd):    
+    P = {0:np.array((0,0))}
+    P.update({i+1:np.array((k,v)) for i,(k,v) in enumerate(zip(xPrime,yCsd))})
+    #P is (i->(xPrime[i],yCsd[i]))
+    S = algorithm1(P)
+    F1 = algorithm2(P,S)
+    
+    # P = {}
+    # P.update({i+1:np.array((k,v)) for i,(k,v) in enumerate(zip(xPrime,yCsd))})    
+    
+    S = algorithm3(P)
+    F0 = algorithm4(P,S)
+    
+    return F0,F1
+
+def getFVal(F0,F1,ptsUnique,testObjects):
+    pos0 = np.searchsorted(ptsUnique[1:],testObjects,side='right')
+    pos1 = np.searchsorted(ptsUnique[:-1],testObjects,side='left')+1
+    return F0[pos0],F1[pos1]
+
+def ScoresToMultiProbs(calibrPoints,testObjects):
+    # sort the points, transform into unique objects, with weights and updated values
+    yPrime,yCsd,xPrime,ptsUnique = prepareData(calibrPoints)
+    
+    # compute the F0 and F1 functions from the CSD
+    F0,F1 = computeF(xPrime,yCsd)
+    
+    # compute the values for the given test objects
+    p0,p1 = getFVal(F0,F1,ptsUnique,testObjects)
+                    
+    return p0,p1
+
+def computeF1(yCsd,xPrime):
+    global kPrime
+    
+    P = {0:np.array((0,0))}
+    P.update({i+1:np.array((k,v)) for i,(k,v) in enumerate(zip(xPrime,yCsd))})
+    
+    S = algorithm1(P)
+    F1 = algorithm2(P,S)
+    
+    return F1
+
+def ScoresToMultiProbsV2(calibrPoints,testObjects):
+    # sort the points, transform into unique objects, with weights and updated values
+    yPrime,yCsd,xPrime,ptsUnique = prepareData(calibrPoints)
+   
+    # compute the F0 and F1 functions from the CSD
+    F1 = computeF1(yCsd,xPrime)
+    pos1 = np.searchsorted(ptsUnique[:-1],testObjects,side='left')+1
+    p1 = F1[pos1]
+    
+    yPrime,yCsd,xPrime,ptsUnique = prepareData((-x,1-y) for x,y in calibrPoints)    
+    F0 = 1 - computeF1(yCsd,xPrime)
+    pos0 = np.searchsorted(ptsUnique[:-1],testObjects,side='left')+1
+    p0 = F0[pos0]
+    return p0,p1
+
+def generate_label_from_probability(p0,p1,testScores,isprint=True):
+    p = p1/(1-p0+p1)
+    full_test=np.array([np.array([1-i,i]) for i in p])
+    t_p=[(int(round(testScores[i])),int(round(p[i])),testScores[i],p[i]) for i in range(0,len(p))]
+    #label from score, label from probability, score, probability
+    count=0
+    for i in range(0,len(t_p)):
+        if (t_p[i][0]!=t_p[i][1]):
+            count = count+1
+            if(isprint):
+                print("differ",count,t_p[i])
+    return t_p,full_test
+#####End of Venn Predictor#####
+
+def xgboostModel_for_venn(train,test ,selectedData_Indices,label = 'Control',category = 'Category',num_round = 100):
+    XGBTrain = train.reset_index(drop=True).copy()
+    XGBTest = test.reset_index(drop=True).copy()
+    labelList = [label,'ZZZZZZZ']
+    XGBTrain.loc[XGBTrain[category]!=label,category]='ZZZZZZZ'
+    XGBTest.loc[XGBTest[category]!=label,category]='ZZZZZZZ'
+    regex = re.compile(r"\[|\]|<|\ ", re.IGNORECASE)
+    param = {'max_depth':2,'eta':0.3,'silent':1,'objective':'binary:logistic','learningrate':0.1}  #'binary:logistic'   'multi:softprob' 'num_class':2,
+    accuracy = []
+    XGBTrain.columns = [regex.sub('_',col) for col in XGBTrain.columns.values]
+    XGBTest.columns = [regex.sub('_',col) for col in XGBTest.columns.values]
+    selectedData_Indices = [regex.sub('_',col) for col in selectedData_Indices]
+    X_train=XGBTrain[selectedData_Indices]
+    X_test=XGBTest[selectedData_Indices]
+    Y_train=XGBTrain[category]
+    Y_test=XGBTest[category]
+    labelEncoder = LabelEncoder()
+    Y_train = labelEncoder.fit_transform(Y_train.values)
+    Y_test = labelEncoder.fit_transform(Y_test.values)
+    score_and_label_list=[]
+    test_score=[]
+    fullTest=np.array([])
+    fullPredict=[]
+    fullTest=np.concatenate((fullTest,Y_test),axis=0)
+    dtrain = xgb.DMatrix(X_train,label=Y_train)
+    dtest = xgb.DMatrix(X_test,label=Y_test)
+    bst = xgb.train(param,dtrain,num_round,feval='map5eval',maximize=True)
+    preds = bst.predict(dtest)
+    fullPredict=fullPredict+list(preds)
+    best_preds = np.asarray([round(value) for value in preds])
+    precision = precision_score(Y_test,best_preds,average='macro')
+    Y_test = pd.DataFrame(Y_test).reset_index()
+    count=0
+    for i in range(0,len(best_preds)):
+        score_and_label_list.append((preds[i],Y_test.iloc[i][0]))
+        test_score.append(preds[i])
+        if(best_preds[i] != Y_test.iloc[i][0]):
+            count=count+1
+    accuracy.append(1-count/len(best_preds))
+    pArray = np.array(accuracy)
+    fullPredict=[np.array([1-i,i]) for i in fullPredict]
+    p0,p1 = ScoresToMultiProbs(score_and_label_list,test_score)
+    label_from_probability,full_predic_venn = generate_label_from_probability(p0,p1,test_score,False)
+    readable_pre=[i[0] for i in full_predic_venn]
+    test[label]=readable_pre
+    return test,fullTest,np.array(fullPredict),labelList
+
