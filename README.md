@@ -1,5 +1,5 @@
 # DATA SCIENCE TOOLS
-## DATA TRANSFORMATION TOOLS
+
 I wrote these codes during my first research project at ICL, using them makes my project much easier to be done and some of them are general methods which can be widely applied to the other data science tasks. Thus, I'd like to share them here in the case that someone may find them useful. These tools are focused on the tasks in many aspects of data science, in order to make them easy to use, they are coded as separated functions in DStools.py and can be easily used by running this script. Examples can be found in the following content as below:
 
 Please notice: These tools are developed as references of solution for different data science use cases. Many of these tools are built based on packages like pandas, numpy, sci-learn, bokeh etc. Thus, please refer to the licences of the specific packages when using these tools.
