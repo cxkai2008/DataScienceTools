@@ -11,6 +11,45 @@ from bokeh.models import Range1d,LabelSet,Label,ColumnDataSource,HoverTool,Wheel
 from bokeh.palettes import brewer,inferno,magma,viridis,grey
 from bokeh.plotting import figure, show, output_file
 from bokeh.transform import transform,factor_cmap
+#####Select certain rows from dataFrame based on the combined conditions related to index1 and index2#####
+def combined_conditions_filter(condition_map,data_frame,index1,index2):
+    dataFrame=data_frame.copy()
+    dataFrame[index1] = dataFrame[index1].astype(str)
+    dataFrame[index2] = dataFrame[index2].astype(str)
+    dataFrame['filter'] = dataFrame[index1] + '***' + dataFrame[index2]
+    lst = list(str(key)+'***'+str(value) for key,value in condition_map.items())
+    subComLevData = dataFrame[dataFrame['filter'].isin(lst)]
+    del subComLevData['filter']
+    return subComLevData
+#Unit vectors transformation of a Matrix. 
+def generate_unit_modules(mx, isrow=True, is_scale=True, simple_scale=True):
+    test = mx.copy()
+    if(is_scale):
+        test=scale_matrix(test,isrow=isrow,simple_scale=simple_scale)
+    if(isrow):
+        for i in range(0,len(test)):
+            test[i] = test[i]/test[i].sum()
+    else:
+        test_t = np.transpose(test)
+        for i in range(0,len(test_t)):
+            test_t[i] = test_t[i]/test_t[i].sum()
+        test = np.transpose(test_t)
+    return test
+
+#return the top or bottom n indices of a list
+def topOrBottomN(lst,n,isabs=False,isbottom=False):
+    if (isabs):
+        sortList = []
+        for i in range(0,len(lst)):
+            sortList.append(abs(lst[i]))
+    else:
+        sortList = lst
+    sortDF = pd.DataFrame({'sort':sortList})
+    sortDF['index'] = sortDF.index
+    sortDF = sortDF.sort_values(by='sort', ascending=isbottom)
+    indexList = sortDF['index'].tolist()
+    return indexList[0:n]
+
 #scale matrix based on row or col by simple method or median_transform
 def scale_matrix(test,isrow=True,simple_scale=True):
     if(simple_scale):
@@ -305,3 +344,92 @@ def plot_histogram(title, measured,outputFilePath, bins_number = 1000):
     p.x_range = Range1d(0,1.01)
     show(p)
     return p
+def plotBWScatter(DataFrame ,xvalue,yvalue, sizevalue, outputFilePath, readList,plotWidth = 1200, plotHeight = 900, titleName='features importance'):
+    hover = HoverTool()
+    tooltipString = ""
+    for ele in readList:
+        readTuple = (ele.lower(),ele)
+        tooltipString = tooltipString + """<br><font face="Arial" size="4">%s: @%s<font>""" % readTuple
+    hover.tooltips = tooltipString
+    tools= [hover,WheelZoomTool(),PanTool(),BoxZoomTool(),ResetTool(),SaveTool()]
+    source= ColumnDataSource(DataFrame)
+    p = figure(plot_width = plotWidth, plot_height = plotHeight, tools=tools,title=titleName,toolbar_location='right',x_axis_label=xvalue.lower(),y_axis_label=yvalue.lower(),background_fill_color='white',title_location = 'above')
+    p.title.text_font_size='15pt'
+    p.title.align = 'center'
+    p.xaxis.axis_label_text_font_size='12pt'
+    p.yaxis.axis_label_text_font_size='12pt'
+    p.x_range = Range1d(DataFrame[xvalue].min()*1.1,DataFrame[xvalue].max()*1.1)
+    p.y_range = Range1d(DataFrame[yvalue].min()*1.1,DataFrame[yvalue].max()*1.1)
+    p.circle(x = xvalue,y = yvalue,size=sizevalue,source=source,color='grey')
+    p.toolbar.active_scroll=p.select_one(WheelZoomTool)#set default active to scroll tool
+    output_file(outputFilePath)
+    show(p)
+#k-means clustering method
+def k_means_DF(data_frame,numeric_features,clusters=8,is_row=True):
+    clustering_data_validation = data_frame[numeric_features].copy()
+    if(is_row):
+        corr_validation_DF = clustering_data_validation.T.corr()
+    else:
+        corr_validation_DF = clustering_data_validation.corr()
+    kmeans = KMeans(n_clusters=clusters,random_state=100).fit(corr_validation_DF)
+    clusterDic = {corr_validation_DF.columns[i]:kmeans.labels_[i]  for i in range(0,len(kmeans.labels_))}
+    npArray = np.array([[key,value]  for (key,value) in clusterDic.items() ])
+    DF = pd.DataFrame(npArray)
+    DF.columns = ['element','group']
+    return DF
+
+def plotHeatMap(corrDF , featureList,path_file):
+    output_file(path_file)
+    corrDF.columns.name = 'Features'
+    df = pd.DataFrame(corrDF[featureList].stack(), columns=['Distance']).reset_index()
+    df.columns=['level_0','Features','Distance']
+    source = ColumnDataSource(df)
+    colors = ["#75968f", "#a5bab7", "#c9d9d3", "#e2e2e2", "#dfccce", "#ddb7b1", "#cc7878", "#933b41", "#550b1d"]
+    mapper = LinearColorMapper(palette=colors, low=df.Distance.min(), high=df.Distance.max())
+    p = figure(plot_width=3500, plot_height=3500, title="HeatMap",
+              x_range=featureList, y_range=featureList,
+              toolbar_location=None, tools="", x_axis_location="above")
+    p.rect(x="Features", y="level_0", width=1, height=1, source=source,line_color=None, fill_color=transform('Distance', mapper))
+    color_bar = ColorBar(color_mapper=mapper, location=(0, 0),
+                         ticker=BasicTicker(desired_num_ticks=len(colors)),
+                         formatter=PrintfTickFormatter(format="%d%%"))
+    p.add_layout(color_bar, 'right')
+    p.axis.axis_line_color = None
+    p.axis.major_tick_line_color = None
+    p.axis.major_label_text_font_size = "30pt"
+    p.axis.major_label_standoff = 0
+    p.xaxis.major_label_orientation = 1.0
+    show(p)
+
+def plot_heatmap_for_kmeans_groups(data_frame,numeric_features,path,clusters=8,is_row=True):
+    result_DF = k_means_DF(data_frame,numeric_features,clusters,is_row)
+    for k in range(0,clusters):
+        group_filter = result_DF['group'].astype(str)==str(k)
+        subFeatureList = result_DF[group_filter]['element'].values
+        if(is_row):
+            subNormalData = data_frame[numeric_features].T[subFeatureList].copy()
+        else:
+            subNormalData = data_frame[subFeatureList].copy()
+        if(subNormalData.shape[1]<2):
+            continue
+        subcorrDF = subNormalData.corr()
+        subcorrDF.columns=[str(i) for i in subcorrDF.columns.tolist()]
+        assert len(subFeatureList) == subcorrDF.shape[0]
+        subDistMatrix = subcorrDF.as_matrix(columns=None)
+        for i in range(0,len(subDistMatrix)):
+            subDistMatrix[i]=1-subDistMatrix[i]
+        sublinked = linkage(subDistMatrix,'ward','euclidean',True)  
+        subFeatureDict= {i:[subcorrDF.columns[i]] for i in range(0,len(subcorrDF.columns))}
+        for i in range(0,len(sublinked)):
+            index = i+sublinked.shape[0]+1
+            firstList = subFeatureDict[sublinked[i][0]]
+            for j in subFeatureDict[sublinked[i][1]]:
+                firstList.append(j)
+            if(len(firstList)!=sublinked[i][3]):
+                print("the length is not equal")
+            subFeatureDict[index]=firstList
+        subFeatureList=subFeatureDict[sublinked.shape[0]*2]
+        strFeatureList = [str(i) for i in subFeatureList]
+        subcorrDF.index=subcorrDF.columns
+        subcorrDF=subcorrDF.T[subFeatureList].T
+        plotHeatMap(subcorrDF[subFeatureList].reset_index(drop=True),strFeatureList,path+'/heatmap-'+str(k)+'.html')

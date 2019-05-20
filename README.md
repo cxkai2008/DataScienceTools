@@ -1,7 +1,9 @@
 # Data Science tools
-Useful data science tools in many aspects.
+I wrote these codes during my first research project at ICL, using them makes my project much easier to be done and some of them are general methods which can be widely applied to the other data science tasks. Thus, I'd like to share them here in the case that someone may find them useful. These tools are focused on the tasks in many aspects of data science, in order to make them easy to use, they are coded as separated functions in DStools.py and can be easily used by running this script. Examples can be found in the following content as below:
 
-## Data transformation tools
+Please notice: These tools are developed as references of solution for different data science use cases. Many of these tools are built based on packages like pandas, numpy, sci-learn, bokeh etc. Thus, please refer to the licences of the specific packages when using these tools.
+
+## Data Display tools
 ### Find distinct elements of two list separately. 
 sort and reset index based on a certain index
 * ind1: the first list
@@ -11,6 +13,25 @@ sort and reset index based on a certain index
 ```
 (disinidx1,disinidx2) = findDistinct(ind1,ind2)
 ```
+### Return the top or bottom n indices of a certain list. 
+The indices of top or bottom n elements in a list are calculated and outputed.
+* lst: the input list
+* n: the number of output indices
+* isabs: elements are ordered based on their absolute values or not
+* isbottom: sort by descending order or not
+```
+top_indices_lst = topOrBottomN(lst,n,isabs=False,isbottom=False)
+```
+### Select certain rows from a dataframe based on the combined conditions.
+select the rows from a dataframe based on the condition that the column1 equals to the key of the condition_dict and the column2 equals to the value of the condition_dict
+* condition_dict: the conditions comprised by the paired keys and values.
+* data_frame: the original dataframe
+* col1: the column of the key of condition_dict in data_frame
+* col2: the column of the value of condition_dict in data_frame
+```
+sub_dataframe = combined_conditions_filter(condition_dict,data_frame,col1,col2)
+```
+## Data transformation tools
 ### Sort data frame. 
 sort and reset index based on a certain index
 * DF: the data frame which is to be sorted
@@ -54,6 +75,15 @@ Scale matrix by each row or col separately. The scaling method can choose from t
 * simple_scale: whether use the basic method or median_transform
 ```
 scaled_matrix = scale_matrix(test,isrow=True,simple_scale=True)
+```
+### Unit vectors transformation of a Matrix. 
+Transform row or column vectors of a matrix into unit vectors(sum(vec)=1,min(vec)>=0).
+* mx: the input matrix
+* isrow: scale and transform by each row or col
+* is_scale: whether scale the matrix before vector transformation
+* simple_scale: whether use the basic method or median_transform
+```
+scaled_matrix = generate_unit_modules(mx, isrow=True, is_scale=True, simple_scale=True)
 ```
 ## Classification tools
 ### Handle unbalanced data. 
@@ -106,8 +136,34 @@ accuracy,full_wrong_list,full_test,full_predict,label_list = DT_RF_models(megada
 full_feature_importance_RF_DF = generate_RF_feature_importance(folder_path,megadata_temp,['1','2','3','4'],'5')
 T_full_feature_importance_RF_DF = transform_feature_importance(full_feature_importance_RF_DF,label_list) 
 ```
-
+## Clustering tools
+### K-means clustering. 
+Use k-means to cluster the data and output the cluster id of each sample
+* data_frame: the input dataframe
+* numeric_features: the columns used for clustering, must be numeric
+* clusters: the expected number of clusters
+* is_row: clustering is based on rows or columns.
+```
+result_DF = k_means_DF(data_frame,numeric_features,clusters=8,is_row=True)
+```
+### Plot a heatmap for each K-means cluster. 
+Plot a heatmap for each cluster, the features for each heatmap is reordered by hierachecal clustering, thus it is possible to have subclusters with each main cluster. It is a very useful way of clustering result visualisation.
+* data_frame: the input dataframe
+* numeric_features: the columns used for clustering, must be numeric
+* path: the path of the saved heatmaps.
+* clusters: the expected number of clusters, if equals to 1 means use the full dataset to plot the heatmap.
+* is_row: clustering is based on rows or columns.
+```
+plot_heatmap_for_kmeans_groups(data_frame=DF,numeric_features=['1','2','3'],path='/abc/abc', clusters=1, is_row=True)
+```
 ## Plotting tools
+### Plot heatmap based on a similarity data frame. 
+* corrDF: the input similarity dataframe, the values ranged from -1 to 1.
+* featureList: the list of column/sample names
+* path_file: the storing path and file name of the html heatmap
+```
+plotHeatMap(corrDF=DF.corr() , featureList=['1','2','3'],path_file='/abc/abc/heatmap.html')
+```
 ### Plot histogram based on a list of values. 
 * 'title': the title of histogram 
 * listOfValues: the list of values used to plot histogram
@@ -116,5 +172,17 @@ T_full_feature_importance_RF_DF = transform_feature_importance(full_feature_impo
 ```
 plot_histogram('title', listOfValues,'outputFilePath', bins_number = 1000)
 ```
-
+### Scatter plot without colours. 
+* data_frame: the dataframe which stores the plotting data
+* xvalue: the column of dataframe which is used as x axis
+* yvalue: the column of dataframe which is used as y axis
+* sizevalue: the column of dataframe which is used as the size of dots, int value is also available.
+* outputFilePath: the path and file name of output file
+* readList: the columns shown in the interactive plots when the mouse hover on a dots.
+* plotWidth: the width of the plot
+* plotHeight: the height of the plot
+* titleName: the title of the plot.
+```
+plotBWScatter(data_frame,xvalue = 'col1',yvalue = 'col2', sizevalue = 5, outputFilePath='/path/plot.html',readList = ['co1','col2'],plotWidth = 1200, plotHeight = 900, titleName='plot title')
+```
 
