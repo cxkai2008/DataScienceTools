@@ -148,6 +148,8 @@ result_DF = k_means_DF(data_frame,numeric_features,clusters=8,is_row=True)
 ```
 ### Plot a heatmap for each K-means cluster. 
 Plot a heatmap for each cluster, the features for each heatmap is reordered by hierachecal clustering, thus it is possible to have subclusters with each main cluster. It is a very useful way of clustering result visualisation.
+An example:
+https://github.com/cxkai2008/DataScienceTools/blob/master/materials/Screenshot_2019-05-20.png
 * data_frame: the input dataframe
 * numeric_features: the columns used for clustering, must be numeric
 * path: the path of the saved heatmaps.
