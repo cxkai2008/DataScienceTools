@@ -327,7 +327,7 @@ def transform_feature_importance(fullFeatureImportanceDF,label_list):
     feature_importance_DF['sampleSize_value']=pow(feature_importance_DF['Sample Size'],0.25)
     feature_importance_DF['Ability']=feature_importance_DF['max_value']*feature_importance_DF['median_value']*feature_importance_DF['sampleSize_value']*10+5
     feature_importance_DF = feature_importance_DF.sort_values(by='Ability', ascending=False) 
-    return feature_importance_DF[label_list+['Sample Size','Ability']]
+    return feature_importance_DF[['Features']+label_list+['Sample Size','Ability']]
 
 #####plot histogram based on a list of values#####
 def plot_histogram(title, measured,outputFilePath, bins_number = 1000):
