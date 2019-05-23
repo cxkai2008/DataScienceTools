@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import random
 from sklearn import tree
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import export_graphviz
 import re
 from os import listdir
