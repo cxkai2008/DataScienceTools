@@ -114,7 +114,7 @@ training_X,testing_X,training_Y,testing_Y = cross_validation_split_with_unbalanc
 * isDT: "True" means using decision tree model, else using random forest model
 * test_size: the proportion of input dataset used for testing
 * handle_unbalance: whether or not handle unbalanced dataset using handle_unbalanced_dataset
-* folder_path: the path used for storing ".dot" files
+* folder_path: the path used for storing ".dot" files,e.g. '/abc/abc/'
 * readList: the list of features required to be printed in bad predicting cases
 * DTdenotion: The title of plot of decision tree model
 * isplot: whether or not plot for decision tree model and random forest model
@@ -131,7 +131,7 @@ accuracy,full_wrong_list,full_test,full_predict,label_list = DT_RF_models(megada
 * megadata_temp: input dataset, contains id column and label column 
 * ['1','2','3','4']: the name list of numeric features for training models
 * '5': the name of label column
-* folder_path: the path used for storing ".dot" files
+* folder_path: the path used for storing ".dot" files,e.g. '/abc/abc/'
 * label_list: the list of labels generated from DT_RF_models
 ```
 full_feature_importance_RF_DF = generate_RF_feature_importance(folder_path,megadata_temp,['1','2','3','4'],'5')
