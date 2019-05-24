@@ -497,8 +497,9 @@ def print_precision_recall_accuracy(full_test,full_predict,label_list,class_num=
         else:
             print(label_list[n],"Precision: ",tp/(tp+fp))
 
-#####Venn Predictor#####
-# This part of codes is taken from https://github.com/ptocca/VennABERS
+##########Venn-Abers Predictor##########
+### This part of codes is taken from https://github.com/ptocca/VennABERS, All credit of this part goes to the author of this repository.###
+
 # Some elementary functions to speak the same language as the paper
 # (at some point we'll just replace the occurrence of the calls with the function body itself)
 def push(x,stack):
@@ -703,7 +704,7 @@ def generate_label_from_probability(p0,p1,testScores,isprint=True):
             if(isprint):
                 print("differ",count,t_p[i])
     return t_p,full_test
-#####End of Venn Predictor#####
+##########End of Venn-Abers Predictor##########
 
 def xgboostModel_for_venn(train,test ,selectedData_Indices,label = 'Control',category = 'Category',num_round = 100):
     XGBTrain = train.reset_index(drop=True).copy()
