@@ -5,6 +5,8 @@ import random
 from sklearn import tree
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import export_graphviz
+from sklearn.cluster import KMeans
+from scipy.cluster.hierarchy import dendrogram, linkage
 import re
 from os import listdir
 from bokeh.layouts import gridplot
