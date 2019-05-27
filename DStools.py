@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import random
 from sklearn import tree
+from sklearn.manifold import TSNE
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import export_graphviz
 from sklearn.cluster import KMeans
@@ -191,7 +192,7 @@ def cross_validation_split_with_unbalance_data(df,numeric_features,label='Catego
     test_DF.index=np.array(test_index)
     if(handle_unbalance):
         train_DF=handle_unbalanced_dataset(train_DF,numeric_features,label,id_column)
-    return train_DF[numeric_features],test_DF[numeric_features],train_DF[label],test_DF[label]
+    return train_DF[numeric_features],test_DF[numeric_features+[id_column]],train_DF[label],test_DF[label]
 
 
 def DT_RF_models(dataSet,numeric_features,path,isDT = True,iteration=10,testSize =0.2,readList = ['Compound Name'], label = 'Category',DTdenotion='test',DT_maxdepth=2,numberOfTrees = 50,RF_maxdepth=6,isplot=False,id_column='id',handle_unbalance=True):
@@ -753,3 +754,142 @@ def xgboostModel_for_venn(train,test ,selectedData_Indices,label = 'Control',cat
     test[label]=readable_pre
     return test,fullTest,np.array(fullPredict),labelList
 
+def tSNEPlot(oriData,data_Indices,read_list,color_col,storing_loc,size_col = 5, iters=1000, perp=2, title='tSNE',num_components=2):
+    tsne = TSNE(n_components=num_components,random_state=0,n_iter=iters,perplexity=perp)
+    tSNE_DF = oriData.copy()
+    tSNE_DF=tSNE_DF.reset_index(drop=True)
+    tSNE_DF_2d = (tSNE_DF[data_Indices] - tSNE_DF[data_Indices].mean()) / (tSNE_DF[data_Indices].max() - tSNE_DF[data_Indices].min())
+    tSNE_DF_2d = tsne.fit_transform(tSNE_DF_2d.fillna(0))
+    tSNE_DF_2d = pd.DataFrame(tSNE_DF_2d).reset_index(drop=True)
+    tSNE_DF_2d.columns=[str(i) for i in range(1,1+num_components)]
+    for i in read_list+[color_col]:
+        tSNE_DF_2d[i] = tSNE_DF[i]
+    tSNE_DF_2d[color_col]=tSNE_DF_2d[color_col].astype(str)
+    plotColorScatter(tSNE_DF_2d ,xvalue = '1',yvalue = '2', sizevalue = size_col, outputFilePath=storing_loc,plotWidth = 750, plotHeight = 750, readList = read_list,titleName=title,colorColumn=color_col,colorPattern=viridis)
+    return tSNE_DF_2d
+
+def plotColorScatter(DataFrame ,xvalue = '0',yvalue = '1', sizevalue = 'size', outputFilePath='/abc/test.html',plotWidth = 750, plotHeight = 750, readList = ['1','2'],titleName='tSNE', colorColumn="Category", colorPattern=viridis):
+    color_map = factor_cmap(colorColumn,factors=DataFrame[colorColumn].unique(),palette=colorPattern(len(DataFrame[colorColumn].unique())))
+    hover = HoverTool()
+    tooltipString = ""
+    for ele in readList:
+        ele=str(ele)
+        readTuple = (ele.lower(),ele)
+        tooltipString = tooltipString + """<br><font face="Arial" size="4">%s: @%s<font>""" % readTuple
+    hover.tooltips = tooltipString
+    tools= [hover,WheelZoomTool(),PanTool(),BoxZoomTool(),ResetTool(),SaveTool()]
+    source= ColumnDataSource(DataFrame)
+    output_file(outputFilePath)
+    p = figure(plot_width = plotWidth, plot_height = plotHeight, tools=tools,title=titleName,toolbar_location='right',x_axis_label=xvalue.lower(),y_axis_label=yvalue.lower(),background_fill_color='white',title_location = 'above')
+    p.title.text_font_size='15pt'
+    p.title.align = 'center'
+    p.xaxis.axis_label_text_font_size='12pt'
+    p.yaxis.axis_label_text_font_size='12pt'
+    p.x_range = Range1d(DataFrame[xvalue].min()*1.1,DataFrame[xvalue].max()*1.1)
+    p.y_range = Range1d(DataFrame[yvalue].min()*1.1,DataFrame[yvalue].max()*1.1)
+    p.circle(x = xvalue,y = yvalue,size=sizevalue,source=source,color=color_map,legend=colorColumn)
+    p.legend.location = "top_left"
+    p.toolbar.active_scroll=p.select_one(WheelZoomTool)
+    show(p)
+
+def print_full_wrong_list(full_wrong_list):
+    s = set()
+    for i in full_wrong_list:
+        strings = 'Pre-Label: '+i[0]+'   Original_data: '+i[1]+'  Probability: '+str(i[3])
+        s.add(strings)
+    for i in s:
+        print(i)
+
+def xgboost_multi_classification(input_df,numeric_features_validation,iteration=10,test_size=0.2,max_depth=2,num_class=4,num_trees=50,label_column='Category',id_column='PlateID',handle_unbalance=True,readList=['PlateID','Compound Name']):
+    XGBData = input_df.copy()
+    selectedData_Indices = numeric_features_validation  #  data_Indices
+    regex = re.compile(r"\[|\]|<|\ ", re.IGNORECASE)
+    param = {'max_depth':max_depth,'eta':0.3,'silent':1,'objective':'multi:softprob','num_class':num_class,'learningrate':0.1} 
+    num_round = num_trees
+    labelList = XGBData.groupby([label_column],as_index=False).mean()[label_column].tolist()
+    label = 0
+    accuracy = []
+    X = XGBData.reset_index()[selectedData_Indices]
+    Y = XGBData.reset_index()[label_column]
+    X.columns = [regex.sub('_',col) for col in X.columns.values]
+    XGBData.columns = [regex.sub('_',col) for col in XGBData.columns.values]
+    selectedData_Indices = [regex.sub('_',col) for col in selectedData_Indices]
+    labelEncoder = LabelEncoder()
+    labelEncoded = labelEncoder.fit_transform(XGBData.reset_index()[label_column].values)
+    fullWrongList=[]
+    fullTest=np.array([])
+    fullPredict=[]
+    for j in range(0,iteration):
+        X_train, X_test, Y_train, Y_test = cross_validation_split_with_unbalance_data(XGBData,selectedData_Indices,label=label_column,id_column=id_column,test_size=test_size,handle_unbalance=handle_unbalance)
+        Y_train = labelEncoder.fit_transform(Y_train.values)
+        Y_test = labelEncoder.fit_transform(Y_test.values)
+        fullTest=np.concatenate((fullTest,Y_test),axis=0)
+        dtrain = xgb.DMatrix(X_train,label=Y_train)
+        dtest = xgb.DMatrix(X_test,label=Y_test)
+        bst = xgb.train(param,dtrain,num_round,feval='map5eval',maximize=True)
+        preds = bst.predict(dtest)
+        fullPredict=fullPredict+list(preds)
+        best_preds = np.asarray([np.argmax(line) for line in preds])
+        precision = precision_score(Y_test,best_preds,average='macro')
+        Y_test = pd.DataFrame(Y_test).reset_index()
+        count=0
+        for i in range(0,len(best_preds)):
+            if(best_preds[i] != Y_test.iloc[i][label]):
+                count=count+1
+                string=''
+                for l in range(0,len(readList)):
+                    string = string + str(XGBData.reset_index().iloc[X_test.index[i]][readList[l]])+'---'
+                singleWrongList = [labelList[best_preds[i]],string+labelList[Y_test.iloc[i][label]],str(j),preds[i]]
+                fullWrongList.append(singleWrongList)
+        print('------------------accuracy = '+str(1-count/len(best_preds))+'------------------')
+        accuracy.append(1-count/len(best_preds))
+        #bst.dump_model(storePath)
+    pArray = np.array(accuracy)
+    print(pArray.mean(),pArray.std())
+    return pArray,fullWrongList,fullTest,np.array(fullPredict),labelList
+def combined_eXGBT_classifier(training_set,numeric_features_validation,testing_set,label_column = 'Category',max_depth=2,num_class=4,num_trees=50):
+    df_te = testing_set.copy()
+    for i in set(df_tr[label_column].unique().tolist()):
+        df_te,full_test,full_predict,label_list =xgboostModel_for_venn(training_set,df_te,numeric_features_validation,label =i,category = label_column,num_round = num_trees)
+    XGBData = training_set.copy()
+    print(df_te.columns)
+    selectedData_Indices = numeric_features_validation  #  data_Indices
+    regex = re.compile(r"\[|\]|<|\ ", re.IGNORECASE)
+    param = {'max_depth':max_depth,'eta':0.3,'silent':1,'objective':'multi:softprob','num_class':num_class,'learningrate':0.1} 
+    labelList = XGBData.groupby([label_column],as_index=False).mean()[label_column].tolist()
+    X = XGBData.reset_index()[selectedData_Indices]
+    Y = XGBData.reset_index()[label_column]
+    Z = df_te[selectedData_Indices]
+    X.columns = [regex.sub('_',col) for col in X.columns.values]
+    Z.columns = [regex.sub('_',col) for col in Z.columns.values]
+    labelEncoder = LabelEncoder()
+    labelEncoded = labelEncoder.fit_transform(Y.values)
+    dtrain = xgb.DMatrix(X,label=labelEncoded)
+    bst = xgb.train(param,dtrain,num_trees,feval='map5eval',maximize=True)
+    dtest = xgb.DMatrix(Z)
+    preds = bst.predict(dtest)
+    best_preds = np.asarray([np.argmax(line) for line in preds])
+    readable_pre=[labelList[i] for i in best_preds]
+    df_te['multi_eXGBT_pre_lable']=readable_pre
+    return df_te
+
+def transform_predict_result_DF(predict_result_DF,id_col,label_col,threshold=0.1):
+    label_list = predict_result_DF[label_col].unique().tolist()
+    predict_result_DF['max']=predict_result_DF[label_list].T.max()
+    min_Filter = predict_result_DF['max']<threshold
+    predict_result_DF.loc[min_Filter,'F_label']=predict_result_DF.loc[min_Filter,'multi_eXGBT_pre_lable']
+    max_Filter = predict_result_DF['max']>=threshold
+    for i in label_list:
+        analogue_filter = predict_result_DF['max']==predict_result_DF[i]
+        predict_result_DF.loc[analogue_filter&max_Filter,'F_label']=i
+    predict_result_DF = predict_result_DF.rename({'max': 'probability'}, axis='columns')
+    temp1= predict_result_DF.groupby([id_col,'F_label'], as_index=False).mean()[[id_col,'F_label','probability']]
+    temp1['ID']=temp1[id_col].astype(str)+temp1['probability'].astype(str)
+    temp2= temp1.groupby([id_col], as_index=False).max()[[id_col,'probability']]
+    temp2['ID']=temp2[id_col].astype(str)+temp2['probability'].astype(str)
+    temp3=temp2.merge(temp1, on='ID', how='left')[[id_col+'_x','probability_x','F_label']]
+    temp3.columns=[id_col,'confidence','predicted_label']
+    temp3.groupby(['predicted_label'], as_index=False).count()[['predicted_label','confidence']]
+    temp3=temp3.merge(predict_result_DF, on=id_col, how='left')[[id_col,'confidence','predicted_label',label_col]]
+    fake_filter = temp3[id_col].astype(str).str.startswith('fake')
+    return predict_result_DF,temp3[~fake_filter]
