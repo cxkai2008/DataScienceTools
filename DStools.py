@@ -133,19 +133,7 @@ def median_transform(lst,scale,lowerbound):
 
 #####find distict items in two lists#####
 def findDistinct(ind1,ind2):
-    # print("distict item in ind1")
-    disinidx1=[]
-    for i1 in ind1:
-        if i1 not in ind2:
-            # print(i1)
-            disinidx1.append(i1)
-    # print("distict item in ind2")
-    disinidx2=[]
-    for i2 in ind2:
-        if i2 not in ind1:
-            # print(i2)
-            disinidx2.append(i2)
-    return (disinidx1,disinidx2)
+    return (np.setdiff1d(ind1, ind2),np.setdiff1d(ind2, ind1))
 
 
 def handle_unbalanced_dataset(df,numeric_features,label,id_column):
