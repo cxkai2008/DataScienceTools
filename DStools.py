@@ -62,7 +62,8 @@ def topOrBottomN(lst,n,isabs=False,isbottom=False):
     return indexList[0:n]
 
 #scale matrix based on row or col by simple method or median_transform
-def scale_matrix(test,isrow=True,simple_scale=True):
+def scale_matrix(tst,isrow=True,simple_scale=True):
+    test=np.copy(tst)
     if(simple_scale):
         if(isrow):
             for i in range(0,len(test)):
@@ -79,7 +80,7 @@ def scale_matrix(test,isrow=True,simple_scale=True):
         else:
             test_t = np.transpose(test)
             for i in range(0,len(test_t)):
-                test_t[i] = median_transform(test[i],1,0)
+                test_t[i] = median_transform(test[:,i],1,0)
             test = np.transpose(test_t)
     return test
 #sort data frame

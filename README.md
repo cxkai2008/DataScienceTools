@@ -71,11 +71,11 @@ scaled_list = median_transform(lst,scale,lowerbound)
 ```
 ### Matrix scaling. 
 Scale matrix by each row or col separately. The scaling method can choose from the basic scaling method or use the method of median_transform. 
-* test: the input matrix
+* tst: the input matrix
 * isrow: scale by each row or col
 * simple_scale: whether use the basic method or median_transform
 ```
-scaled_matrix = scale_matrix(test,isrow=True,simple_scale=True)
+scaled_matrix = scale_matrix(tst,isrow=True,simple_scale=True)
 ```
 ### Unit vectors transformation of a Matrix. 
 Transform row or column vectors of a matrix into unit vectors(sum(vec)=1,min(vec)>=0).
