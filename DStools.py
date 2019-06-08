@@ -22,6 +22,87 @@ from bokeh.plotting import figure, show, output_file
 from bokeh.transform import transform,factor_cmap
 from graphviz import Source
 from itertools import cycle
+
+def generate_reordered_features(megadata_validation,numeric_features_validation,basic_info_features,simple_scale):
+    clustering_data_validation = megadata_validation.copy()
+    clustering_data_validation = scale_matrix(clustering_data_validation[numeric_features_validation],isrow=False,simple_scale=simple_scale)
+    corr_validation_DF = pd.DataFrame(clustering_data_validation,columns=numeric_features_validation).corr('spearman')
+    distance_validation_Matrix = corr_validation_DF.as_matrix(columns=None)
+    for i in range(0,len(distance_validation_Matrix)):
+        distance_validation_Matrix[i]=1-distance_validation_Matrix[i]
+    linked = linkage(distance_validation_Matrix,'ward','euclidean',True)  
+    labelList = corr_validation_DF.index
+    featureDict= {i:[corr_validation_DF.index[i]] for i in range(0,len(corr_validation_DF.index))}
+    for i in range(0,len(linked)):
+        index = i+linked.shape[0]+1
+        firstList = featureDict[linked[i][0]]
+        for j in featureDict[linked[i][1]]:
+            firstList.append(j)
+        if(len(firstList)!=linked[i][3]):
+            print("the length is not equal")
+        featureDict[index]=firstList
+    featureList=featureDict[linked.shape[0]*2]
+    numericFeatureList = featureList.copy()
+    for i in range(len(basic_info_features)):
+        featureList.append(basic_info_features[i])
+    return featureList
+    
+def prepare_scaled_data(layer1_df,layer2_df,layer3_df,reordered_feature_list,simple_scale=False):
+    layer1_mx = layer1_df.copy()
+    layer1_mx = layer1_mx.replace(0,1E-7)
+    layer1_mx = layer1_mx.fillna(1E-8)
+    layer2_mx = layer2_df.copy()
+    layer2_mx = layer2_mx.replace(0,1E-7)
+    layer2_mx = layer2_mx.fillna(1E-8)
+    layer3_mx = layer3_df.copy()
+    layer3_mx = layer3_mx.replace(0,1E-7)
+    layer3_mx = layer3_mx.fillna(1E-8)
+    layer3_mx = layer3_mx.as_matrix(columns=reordered_feature_list)
+    layer2_mx = layer2_mx.as_matrix(columns=reordered_feature_list)
+    layer1_mx = layer1_mx.as_matrix(columns=reordered_feature_list)
+    layer1_mx = scale_matrix(layer1_mx,isrow=False,simple_scale=simple_scale)
+    layer2_mx = scale_matrix(layer2_mx,isrow=False,simple_scale=simple_scale)
+    layer3_mx = scale_matrix(layer3_mx,isrow=False,simple_scale=simple_scale)
+    return layer1_mx,layer2_mx,layer3_mx
+
+def insert_values_between_original_data(for_image_data_matrix):
+    new_matrix = []
+    new_matrix.append(for_image_data_matrix[0])
+    for i in range(1,len(for_image_data_matrix)):
+        new_matrix.append((for_image_data_matrix[i-1]+for_image_data_matrix[i])/2)
+        new_matrix.append(for_image_data_matrix[i])
+    return np.array(new_matrix)
+
+def plot_colorful_CNN_images(layer1_mx,layer2_mx,layer3_mx,cate,path,interpolation_row=0,interpolation_col=0):
+    for i in list(set(cate)):
+        ll=[j for j in range(len(cate)) if cate[j] == i]
+        for_image_data_matrix1 = layer1_mx[ll]
+        for_image_data_matrix2 = layer2_mx[ll]
+        for_image_data_matrix3 = layer3_mx[ll]
+        category = i
+        for i in range(interpolation_row):
+            for_image_data_matrix1 = insert_values_between_original_data(for_image_data_matrix1)
+            for_image_data_matrix2 = insert_values_between_original_data(for_image_data_matrix2)
+            for_image_data_matrix3 = insert_values_between_original_data(for_image_data_matrix3)
+        for i in range(interpolation_col):
+            for_image_data_matrix1 = insert_values_between_original_data(for_image_data_matrix1.T).T
+            for_image_data_matrix2 = insert_values_between_original_data(for_image_data_matrix2.T).T
+            for_image_data_matrix3 = insert_values_between_original_data(for_image_data_matrix3.T).T
+        colorful = [[[for_image_data_matrix1[j][l],for_image_data_matrix2[j][l],for_image_data_matrix3[j][l]] for l in range(0,len(for_image_data_matrix1[j]))] for j in range(0,len(for_image_data_matrix1))]
+        matplotlib.image.imsave(path+'/combined_'+category+'.png',colorful)
+        matplotlib.image.imsave(path+'/layer3_'+category+'.png',for_image_data_matrix3)
+        matplotlib.image.imsave(path+'/layer2_'+category+'.png',for_image_data_matrix2)
+        matplotlib.image.imsave(path+'/layer1_'+category+'.png',for_image_data_matrix1)
+        
+def plot_colorful_images_wrapper(megadata_temp1,megadata_temp2,megadata_temp3,numeric_cols,image_col,interpolation_row,interpolation_col,path,simple_scale=True,generate_reordered_indices=generate_levels_reordered_megadata_DF):
+    reordered_features = generate_reordered_features(megadata_temp1,numeric_cols,[],simple_scale)
+    reordered_indices = generate_reordered_indices(megadata_temp1,reordered_features)
+    reordered_df1 = pd.DataFrame(megadata_temp1, index=reordered_indices)[reordered_features+[image_col]]
+    reordered_df2 = pd.DataFrame(megadata_temp2, index=reordered_indices)[reordered_features+[image_col]]
+    reordered_df3 = pd.DataFrame(megadata_temp3, index=reordered_indices)[reordered_features+[image_col]]
+    mx1,mx2,mx3 = prepare_scaled_data(reordered_df1,reordered_df2,reordered_df3,reordered_features,simple_scale)
+    plot_colorful_CNN_images(mx1,mx2,mx3,reordered_df1[image_col].values.tolist(),path,interpolation_row,interpolation_col)
+
 #####Select certain rows from dataFrame based on the combined conditions related to index1 and index2#####
 def combined_conditions_filter(condition_map,data_frame,index1,index2):
     dataFrame=data_frame.copy()

@@ -33,6 +33,15 @@ select the rows from a dataframe based on the condition that the column1 equals 
 sub_dataframe = combined_conditions_filter(condition_dict,data_frame,col1,col2)
 ```
 ## DATA TRANSFORMATION TOOLS
+### Generate the reordered features of samples based on the result of hierarchical clustering. 
+This function is a part of plot_colorful_images_wrapper, however it can be used individually to return the reordered list.
+* megadata_validation: the data frame which is the input of hierarchical clustering
+* numeric_features_validation: the numeric features used for hierarchical clustering and they are reordered based the correlation coefficents.
+* basic_info_features: the categorical features which also will be combined with reordered numeric features as the output of the function.
+* simple_scale: use simple scaling or median scaling
+```
+generate_reordered_features(megadata_validation,numeric_features_validation,basic_info_features,simple_scale)
+```
 ### Sort data frame. 
 sort and reset index based on a certain index
 * DF: the data frame which is to be sorted
@@ -293,4 +302,19 @@ Plot a scatter colour plot using a dataframe
 * colorPattern: the color pattern used for plotting
 ```
 plotColorScatter(DataFrame ,xvalue = '0',yvalue = '1', sizevalue = 'size', outputFilePath='/abc/test.html',plotWidth = 750, plotHeight = 750, readList = ['1','2'],titleName='tSNE', colorColumn="Category", colorPattern=viridis)
+```
+### A novel visualisation method used for dataset with 100 to 1000 features. 
+Plot images separated by image_col using reordered features and indices. The features are reordered by hierarchical clustering algorithm, so the adjecent columns are highly correlated. Thus, in the global view, certain patterns can appear. The indices should be reordered too(so that highly correlated rows will be close to each other), however the reordering function is different due to the original dataset and it need to be code by users.
+* megadata_temp1: the first layer of image
+* megadata_temp2: the second layer of image
+* megadata_temp3: the third layer of image
+* numeric_cols: the numeric columns used for plot images
+* image_col: the column used for separate images, the unique values in this column are also used as the file name of generated images.
+* interpolation_row: the times of interpolation for rows, the size of rows is doubled by each time of interpolation.
+* interpolation_col: the times of interpolation for columns, the size of columns is doubled by each time of interpolation.
+* path: the folder used for storing the generated images
+* simple_scale: use simple scaling or median scaling
+* generate_reordered_indices: the function used for reorder the indices, take the megadata_temp1 and numeric_cols as input and output a list of reordered indices
+```
+plot_colorful_images_wrapper(megadata_temp1, megadata_temp2, megadata_temp3, numeric_cols, image_col, interpolation_row, interpolation_col, path, simple_scale=True, generate_reordered_indices=generate_levels_reordered_megadata_DF)
 ```
