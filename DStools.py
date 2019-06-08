@@ -1,8 +1,10 @@
-import xgboost as xbg
+import xgboost as xgb
 import graphviz
 import numpy as np
 import pandas as pd
 import random
+import matplotlib
+import scipy.spatial.distance as ssd
 from sklearn import tree
 from sklearn.manifold import TSNE
 from sklearn.ensemble import RandomForestClassifier
@@ -12,6 +14,7 @@ from scipy.cluster.hierarchy import dendrogram, linkage
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder, label_binarize
 from sklearn.tree import export_graphviz
 from sklearn.metrics import precision_score, precision_recall_curve, average_precision_score
+from matplotlib import pyplot as plt
 import re
 import math
 from os import listdir
@@ -27,9 +30,10 @@ def generate_reordered_features(megadata_validation,numeric_features_validation,
     clustering_data_validation = megadata_validation.copy()
     clustering_data_validation = scale_matrix(clustering_data_validation[numeric_features_validation],isrow=False,simple_scale=simple_scale)
     corr_validation_DF = pd.DataFrame(clustering_data_validation,columns=numeric_features_validation).corr('spearman')
-    distance_validation_Matrix = corr_validation_DF.as_matrix(columns=None)
+    distance_validation_Matrix = corr_validation_DF.values
     for i in range(0,len(distance_validation_Matrix)):
         distance_validation_Matrix[i]=1-distance_validation_Matrix[i]
+    distance_validation_Matrix = ssd.squareform(distance_validation_Matrix)
     linked = linkage(distance_validation_Matrix,'ward','euclidean',True)  
     labelList = corr_validation_DF.index
     featureDict= {i:[corr_validation_DF.index[i]] for i in range(0,len(corr_validation_DF.index))}
@@ -50,16 +54,16 @@ def generate_reordered_features(megadata_validation,numeric_features_validation,
 def prepare_scaled_data(layer1_df,layer2_df,layer3_df,reordered_feature_list,simple_scale=False):
     layer1_mx = layer1_df.copy()
     layer1_mx = layer1_mx.replace(0,1E-7)
-    layer1_mx = layer1_mx.fillna(1E-8)
+    layer1_mx = layer1_mx.fillna(1E-8)[reordered_feature_list]
     layer2_mx = layer2_df.copy()
     layer2_mx = layer2_mx.replace(0,1E-7)
-    layer2_mx = layer2_mx.fillna(1E-8)
+    layer2_mx = layer2_mx.fillna(1E-8)[reordered_feature_list]
     layer3_mx = layer3_df.copy()
     layer3_mx = layer3_mx.replace(0,1E-7)
-    layer3_mx = layer3_mx.fillna(1E-8)
-    layer3_mx = layer3_mx.as_matrix(columns=reordered_feature_list)
-    layer2_mx = layer2_mx.as_matrix(columns=reordered_feature_list)
-    layer1_mx = layer1_mx.as_matrix(columns=reordered_feature_list)
+    layer3_mx = layer3_mx.fillna(1E-8)[reordered_feature_list]
+    layer3_mx = layer3_mx.to_numpy()
+    layer2_mx = layer2_mx.to_numpy()
+    layer1_mx = layer1_mx.to_numpy()
     layer1_mx = scale_matrix(layer1_mx,isrow=False,simple_scale=simple_scale)
     layer2_mx = scale_matrix(layer2_mx,isrow=False,simple_scale=simple_scale)
     layer3_mx = scale_matrix(layer3_mx,isrow=False,simple_scale=simple_scale)
@@ -94,7 +98,7 @@ def plot_colorful_CNN_images(layer1_mx,layer2_mx,layer3_mx,cate,path,interpolati
         matplotlib.image.imsave(path+'/layer2_'+category+'.png',for_image_data_matrix2)
         matplotlib.image.imsave(path+'/layer1_'+category+'.png',for_image_data_matrix1)
         
-def plot_colorful_images_wrapper(megadata_temp1,megadata_temp2,megadata_temp3,numeric_cols,image_col,interpolation_row,interpolation_col,path,simple_scale=True,generate_reordered_indices=generate_levels_reordered_megadata_DF):
+def plot_colorful_images_wrapper(megadata_temp1,megadata_temp2,megadata_temp3,numeric_cols,image_col,interpolation_row,interpolation_col,path,generate_reordered_indices,simple_scale=True):
     reordered_features = generate_reordered_features(megadata_temp1,numeric_cols,[],simple_scale)
     reordered_indices = generate_reordered_indices(megadata_temp1,reordered_features)
     reordered_df1 = pd.DataFrame(megadata_temp1, index=reordered_indices)[reordered_features+[image_col]]
@@ -176,7 +180,7 @@ def rrd(DF,sort_column='ID',asc=True,reidx=True):
 def dtm(data_frame,matrix_features,sort_column='ID'):
     data_frame_copy = data_frame.copy()
     data_frame_copy = data_frame_copy.sort_values(by=sort_column, ascending=True)
-    mtx = data_frame_copy[matrix_features].as_matrix(columns=None)
+    mtx = data_frame_copy[matrix_features].values
     return mtx
 # matrix to dataframe
 def mtd(mtx,numeric_features, data_frame=pd.DataFrame(),basic_info_feautes=[], sort_column='ID',asc=True):
@@ -239,7 +243,7 @@ def handle_unbalanced_dataset(df,numeric_features,label,id_column):
         temp_DF[id_column]=np.array(['fakeid'+str(j) for j in range(num,num+temp_DF.shape[0])])
         temp_DF[label]=k
         num=num+temp_DF.shape[0]
-        new_DF = new_DF.append(temp_DF)
+        new_DF = new_DF.append(temp_DF, sort=False)
     new_DF.index = new_DF[id_column]
     return new_DF
     
@@ -269,7 +273,7 @@ def cross_validation_split_with_unbalance_data(df,numeric_features,label='Catego
     test_DF.index=np.array(test_index)
     if(handle_unbalance):
         train_DF=handle_unbalanced_dataset(train_DF,numeric_features,label,id_column)
-    return train_DF[numeric_features],test_DF[numeric_features+[id_column]],train_DF[label],test_DF[label]
+    return train_DF[numeric_features],test_DF[numeric_features],train_DF[label],test_DF[label]
 
 
 def DT_RF_models(dataSet,numeric_features,path,isDT = True,iteration=10,testSize =0.2,readList = ['Compound Name'], label = 'Category',DTdenotion='test',DT_maxdepth=2,numberOfTrees = 50,RF_maxdepth=6,isplot=False,id_column='id',handle_unbalance=True):
@@ -496,9 +500,10 @@ def plot_heatmap_for_kmeans_groups(data_frame,numeric_features,path,clusters=8,i
         subcorrDF = subNormalData.corr()
         subcorrDF.columns=[str(i) for i in subcorrDF.columns.tolist()]
         assert len(subFeatureList) == subcorrDF.shape[0]
-        subDistMatrix = subcorrDF.as_matrix(columns=None)
+        subDistMatrix = subcorrDF.values
         for i in range(0,len(subDistMatrix)):
             subDistMatrix[i]=1-subDistMatrix[i]
+        subDistMatrix = ssd.squareform(subDistMatrix)
         sublinked = linkage(subDistMatrix,'ward','euclidean',True)  
         subFeatureDict= {i:[subcorrDF.columns[i]] for i in range(0,len(subcorrDF.columns))}
         for i in range(0,len(sublinked)):
@@ -835,8 +840,8 @@ def tSNEPlot(oriData,data_Indices,read_list,color_col,storing_loc,size_col = 5, 
     tsne = TSNE(n_components=num_components,random_state=0,n_iter=iters,perplexity=perp)
     tSNE_DF = oriData.copy()
     tSNE_DF=tSNE_DF.reset_index(drop=True)
-    tSNE_DF_2d = (tSNE_DF[data_Indices] - tSNE_DF[data_Indices].mean()) / (tSNE_DF[data_Indices].max() - tSNE_DF[data_Indices].min())
-    tSNE_DF_2d = tsne.fit_transform(tSNE_DF_2d.fillna(0))
+    tSNE_DF_2d = (tSNE_DF[data_Indices] - tSNE_DF[data_Indices].mean()) / (tSNE_DF[data_Indices].max() - tSNE_DF[data_Indices].min()).fillna(0)
+    tSNE_DF_2d = tsne.fit_transform(tSNE_DF_2d.to_numpy())
     tSNE_DF_2d = pd.DataFrame(tSNE_DF_2d).reset_index(drop=True)
     tSNE_DF_2d.columns=[str(i) for i in range(1,1+num_components)]
     for i in read_list+[color_col]:
@@ -926,10 +931,9 @@ def xgboost_multi_classification(input_df,numeric_features_validation,iteration=
     return pArray,fullWrongList,fullTest,np.array(fullPredict),labelList
 def combined_eXGBT_classifier(training_set,numeric_features_validation,testing_set,label_column = 'Category',max_depth=2,num_class=4,num_trees=50):
     df_te = testing_set.copy()
-    for i in set(df_tr[label_column].unique().tolist()):
+    for i in set(training_set[label_column].unique().tolist()):
         df_te,full_test,full_predict,label_list =xgboostModel_for_venn(training_set,df_te,numeric_features_validation,label =i,category = label_column,num_round = num_trees)
     XGBData = training_set.copy()
-    print(df_te.columns)
     selectedData_Indices = numeric_features_validation  #  data_Indices
     regex = re.compile(r"\[|\]|<|\ ", re.IGNORECASE)
     param = {'max_depth':max_depth,'eta':0.3,'silent':1,'objective':'multi:softprob','num_class':num_class,'learningrate':0.1} 
@@ -950,7 +954,9 @@ def combined_eXGBT_classifier(training_set,numeric_features_validation,testing_s
     df_te['multi_eXGBT_pre_lable']=readable_pre
     return df_te
 
-def transform_predict_result_DF(predict_result_DF,id_col,label_col,threshold=0.1):
+def transform_predict_result_DF(predict_result_DF,label_col,threshold=0.1):
+    id_col='predict_result_DF_indices'
+    predict_result_DF[id_col]=predict_result_DF.index
     label_list = predict_result_DF[label_col].unique().tolist()
     predict_result_DF['max']=predict_result_DF[label_list].T.max()
     min_Filter = predict_result_DF['max']<threshold
