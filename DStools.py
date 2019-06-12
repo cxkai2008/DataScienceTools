@@ -46,7 +46,6 @@ def generate_reordered_features(megadata_validation,numeric_features_validation,
             print("the length is not equal")
         featureDict[index]=firstList
     featureList=featureDict[linked.shape[0]*2]
-    numericFeatureList = featureList.copy()
     for i in range(len(basic_info_features)):
         featureList.append(basic_info_features[i])
     return featureList
