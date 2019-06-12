@@ -47,8 +47,8 @@ select the rows from a dataframe based on the condition that the column1 equals 
 sub_dataframe = combined_conditions_filter(condition_dict,data_frame,col1,col2)
 ```
 ## DATA TRANSFORMATION TOOLS
-### Generate the reordered features of samples based on the result of hierarchical clustering. It is very useful when plotting heatmap, the reordered features enable the appearance of interesting patterns.
-This function is a part of plot_colorful_images_wrapper, however it can be used individually to return the reordered list.
+### Generate the reordered features of samples based on the result of hierarchical clustering. 
+This function is a part of plot_colorful_images_wrapper, however it can be used individually to return the reordered list. It is very useful when plotting heatmap, the reordered features enable the appearance of interesting patterns.
 * megadata_validation: the data frame which is the input of hierarchical clustering
 * numeric_features_validation: the numeric features used for hierarchical clustering and they are reordered based the correlation coefficents.
 * basic_info_features: the categorical features which also will be combined with reordered numeric features as the output of the function.
