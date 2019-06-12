@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import random
 import matplotlib
+import textwrap
 import scipy.spatial.distance as ssd
 from sklearn import tree
 from sklearn.manifold import TSNE
@@ -25,6 +26,119 @@ from bokeh.plotting import figure, show, output_file
 from bokeh.transform import transform,factor_cmap
 from graphviz import Source
 from itertools import cycle
+
+
+#####print table#####
+def ppt(table,lines=30,maxWidth = 18,minWidth=10,keepDecimal=2,lineWidth=170):
+    if(minWidth<5):
+        minWidth=5
+    if(maxWidth<minWidth):
+        print("minWidth cannot large than maxWidth")
+    if(lines == -1):
+        lines = table.shape[0]
+    dicType = generateTypeDic(table)
+    dictWidth = generateWidthDic(table,lines,maxWidth,keepDecimal,minWidth)
+    strTemp='|'
+    for col in table:
+        if(dictWidth[col]<minWidth):
+            strTemp = strTemp + truncateString(str(col).upper(),minWidth)
+        else:
+            strTemp = strTemp + truncateString(str(col).upper(),dictWidth[col])
+        string = textwrap.fill(text=strTemp,width=lineWidth)
+    print(string)
+    count = 0
+    for index in range(0,table.shape[0]):
+        if(count<lines):
+            strTemp='|'
+            for col in table:
+                if(dicType[col] is 'str'):
+                    strTemp = strTemp + truncateString(str(table[col].iloc[index]),dictWidth[col])
+                else:
+                    strTemp = strTemp + truncateNumber(decimalIdentical(table[col].iloc[index],keepDecimal),dictWidth[col])
+            string = textwrap.fill(text=strTemp,width=lineWidth)
+            print(string)
+        else:
+            break
+        count +=1
+        
+def generateTypeDic(table):
+    dicType={}
+    for col in table:
+        if(type(table[col].iloc[0]) is np.float64):#if type is np.float64 and the element is NaN, the type is defined as np.float64
+            dicType[col]='float'
+        elif(type(table[col].iloc[0]) is np.int32):
+            dicType[col]='int'
+        else:
+            dicType[col]='str' #if type is str and the element is NaN, the type is defined as float, so that it will be asigned value as str.
+    return dicType
+
+def generateWidthDic(table,lines,maxWidth,keepDecimal=2,minWidth=5):
+    dicWidth={}
+    for col in table:
+        width = minWidth
+        colType = generateTypeDic(table)[col]
+        if(colType is 'str'):
+            for index in range(0,lines):
+                lenth = len(str(table[col].iloc[index]))
+                if(lenth > width):
+                    width = lenth
+            if(width > maxWidth):
+                width = maxWidth
+        elif(colType is 'float' or colType is 'int'):
+            for index in range(0,lines):
+                lenth = len(decimalIdentical(table[col].iloc[index],keepDecimal))
+                if(lenth > width):
+                    width = lenth
+            if(width > max(9,minWidth)):
+                width = max(9,minWidth)
+        dicWidth[col] = width
+    return dicWidth
+
+def decimalIdentical(flt,kd):
+    if(np.isnan(flt)):
+        return str(flt)
+    flStr = str(round(flt,kd))
+    try:
+        dotIndex = len(flStr)-flStr.index('.')-1
+    except ValueError as ve:
+        flStr = flStr+'.'
+        dotIndex = 0
+    for i in range(dotIndex,kd):
+        flStr = flStr + '0'
+    return flStr
+
+def truncateNumber(string, length):
+    strTemp=''
+    if(len(string)<9):
+        strTemp=string
+        for _ in range(len(string),length+2):
+            strTemp=" "+strTemp
+        strTemp=strTemp
+    else:
+        scientificNotation='%.2E' % Decimal(string)
+        strTemp=str(scientificNotation)
+        for _ in range(len(strTemp),length+2):
+            strTemp=" "+strTemp
+    if(len(strTemp)!=length+2):
+        print('truncateNumber is wrong!'+str(strTemp)+' '+str(length))
+    else:
+        return strTemp+'| '
+        
+def truncateString(string, length):
+    strTemp=''
+    if(len(string)<=length):
+        strTemp=string
+        for _ in range(len(string),length+2):
+            strTemp=" "+strTemp
+        strTemp=strTemp
+    else:
+        strTemp=string[0:length]
+        strTemp=strTemp+".."
+    if(len(strTemp)!=length+2):
+        print('truncateString is wrong!'+str(strTemp))
+    else:
+        return strTemp+'| '
+
 
 def generate_reordered_features(megadata_validation,numeric_features_validation,basic_info_features,simple_scale):
     clustering_data_validation = megadata_validation.copy()
