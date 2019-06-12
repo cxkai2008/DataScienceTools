@@ -484,7 +484,32 @@ def plotHeatMap(corrDF , featureList,path_file):
     p.axis.major_label_standoff = 0
     p.xaxis.major_label_orientation = 1.0
     show(p)
-
+    
+def heatMap(DF , path_file, x_size=3500, y_size=3500):
+    featureList=DF.columns.tolist()
+    indexList=DF.index.tolist()
+    output_file(path_file)
+    DF.columns.name = 'Features'
+    df = pd.DataFrame(DF[featureList].stack(), columns=['Distance']).reset_index()
+    df.columns=['level_0','Features','Distance']
+    source = ColumnDataSource(df)
+    colors = ["#75968f", "#a5bab7", "#c9d9d3", "#e2e2e2", "#dfccce", "#ddb7b1", "#cc7878", "#933b41", "#550b1d"]
+    mapper = LinearColorMapper(palette=colors, low=df.Distance.min(), high=df.Distance.max())
+    p = figure(plot_width=x_size, plot_height=y_size, title="HeatMap",
+              x_range=featureList, y_range=indexList,
+              toolbar_location=None, tools="", x_axis_location="above")
+    p.rect(x="Features", y="level_0", width=1, height=1, source=source,line_color=None, fill_color=transform('Distance', mapper))
+    color_bar = ColorBar(color_mapper=mapper, location=(0, 0),
+                         ticker=BasicTicker(desired_num_ticks=len(colors)),
+                         formatter=PrintfTickFormatter(format="%.2f"))
+    p.add_layout(color_bar, 'right')
+    p.axis.axis_line_color = None
+    p.axis.major_tick_line_color = None
+    p.axis.major_label_standoff = 0
+    p.xaxis.major_label_orientation = 1.0
+    p.axis.major_label_text_font_size = "15pt"
+    show(p)
+    
 def plot_heatmap_for_kmeans_groups(data_frame,numeric_features,path,clusters=8,is_row=True):
     result_DF = k_means_DF(data_frame,numeric_features,clusters,is_row)
     for k in range(0,clusters):
