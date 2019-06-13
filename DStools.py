@@ -24,6 +24,7 @@ from bokeh.models import Range1d,LabelSet,Label,ColumnDataSource,HoverTool,Wheel
 from bokeh.palettes import brewer,inferno,magma,viridis,grey
 from bokeh.plotting import figure, show, output_file
 from bokeh.transform import transform,factor_cmap
+from bokeh.io import export_png
 from graphviz import Source
 from itertools import cycle
 
@@ -602,7 +603,6 @@ def plotHeatMap(corrDF , featureList,path_file):
 def heatMap(DF , path_file, x_size=3500, y_size=3500):
     featureList=DF.columns.tolist()
     indexList=DF.index.tolist()
-    output_file(path_file)
     DF.columns.name = 'Features'
     df = pd.DataFrame(DF[featureList].stack(), columns=['Distance']).reset_index()
     df.columns=['level_0','Features','Distance']
@@ -622,6 +622,10 @@ def heatMap(DF , path_file, x_size=3500, y_size=3500):
     p.axis.major_label_standoff = 0
     p.xaxis.major_label_orientation = 1.0
     p.axis.major_label_text_font_size = "15pt"
+    if path_file.endswith('png'):
+        export_png(p, filename=path_file)
+    else:
+        output_file(path_file)
     show(p)
     
 def plot_heatmap_for_kmeans_groups(data_frame,numeric_features,path,clusters=8,is_row=True):
@@ -1067,6 +1071,7 @@ def xgboost_multi_classification(input_df,numeric_features_validation,iteration=
     pArray = np.array(accuracy)
     print(pArray.mean(),pArray.std())
     return pArray,fullWrongList,fullTest,np.array(fullPredict),labelList
+
 def combined_eXGBT_classifier(training_set,numeric_features_validation,testing_set,label_column = 'Category',max_depth=2,num_class=4,num_trees=50):
     df_te = testing_set.copy()
     for i in set(training_set[label_column].unique().tolist()):
