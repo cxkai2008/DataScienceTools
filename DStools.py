@@ -561,8 +561,11 @@ def plotBWScatter(DataFrame ,xvalue,yvalue, sizevalue, outputFilePath, readList,
     p.y_range = Range1d(DataFrame[yvalue].min()*1.1,DataFrame[yvalue].max()*1.1)
     p.circle(x = xvalue,y = yvalue,size=sizevalue,source=source,color='grey')
     p.toolbar.active_scroll=p.select_one(WheelZoomTool)#set default active to scroll tool
-    output_file(outputFilePath)
-    show(p)
+    if outputFilePath.endswith('png'):
+        export_png(p, filename=outputFilePath)
+    else:
+        output_file(outputFilePath)
+        show(p)
 #k-means clustering method
 def k_means_DF(data_frame,numeric_features,clusters=8,is_row=True):
     clustering_data_validation = data_frame[numeric_features].copy()
@@ -626,7 +629,7 @@ def heatMap(DF , path_file, x_size=3500, y_size=3500):
         export_png(p, filename=path_file)
     else:
         output_file(path_file)
-    show(p)
+        show(p)
     
 def plot_heatmap_for_kmeans_groups(data_frame,numeric_features,path,clusters=8,is_row=True):
     result_DF = k_means_DF(data_frame,numeric_features,clusters,is_row)
@@ -1014,7 +1017,11 @@ def plotColorScatter(DataFrame ,xvalue = '0',yvalue = '1', sizevalue = 'size', o
     p.circle(x = xvalue,y = yvalue,size=sizevalue,source=source,color=color_map,legend=colorColumn)
     p.legend.location = "top_left"
     p.toolbar.active_scroll=p.select_one(WheelZoomTool)
-    show(p)
+    if outputFilePath.endswith('png'):
+        export_png(p, filename=outputFilePath)
+    else:
+        output_file(outputFilePath)
+        show(p)
 
 def print_full_wrong_list(full_wrong_list):
     s = set()
