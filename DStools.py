@@ -664,7 +664,8 @@ def plot_heatmap_for_kmeans_groups(data_frame,numeric_features,path,clusters=8,i
         subcorrDF.index=subcorrDF.columns
         subcorrDF=subcorrDF.T[subFeatureList].T
         plotHeatMap(subcorrDF[subFeatureList].reset_index(drop=True),strFeatureList,path+'/heatmap-'+str(k)+'.html')
-
+    if clusters==1:
+        return strFeatureList
 def plot_precision_recall_curve(full_test,full_predict,label_list,class_num=4,title='ROC curve'):
     if(class_num==2):
         full_test=label_binarize(full_test,classes=list(range(0,3)))
