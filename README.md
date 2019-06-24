@@ -70,8 +70,9 @@ Transform data frame to matrix with a certain order
 * DF: the input data frame
 * matrix_features: the set of features need to be transform into matrix
 * sort_column: sort before transformation
+* asc: ordered by ascending or not
 ```
-matrix = dtm(DF,matrix_features,sort_column='ID')
+matrix = dtm(DF,matrix_features,sort_column='ID',asc=True)
 ```
 ### Matrix to data frame. 
 Transform matrix to data frame with a column name list. A sub-data-frame can be combined with the new generated data frame optionally.
