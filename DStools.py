@@ -291,9 +291,9 @@ def rrd(DF,sort_column='ID',asc=True,reidx=True):
     return new_DF
 
 # dataframe to matrix
-def dtm(data_frame,matrix_features,sort_column='ID'):
+def dtm(data_frame,matrix_features,sort_column='ID',asc=True):
     data_frame_copy = data_frame.copy()
-    data_frame_copy = data_frame_copy.sort_values(by=sort_column, ascending=True)
+    data_frame_copy = data_frame_copy.sort_values(by=sort_column, ascending=asc)
     mtx = data_frame_copy[matrix_features].values
     return mtx
 # matrix to dataframe
