@@ -299,7 +299,7 @@ def dtm(data_frame,matrix_features,sort_column='ID',asc=True):
 # matrix to dataframe
 def mtd(mtx,numeric_features, data_frame=pd.DataFrame(),basic_info_feautes=[], sort_column='ID',asc=True):
     DF = pd.DataFrame(mtx,columns=numeric_features)
-    if((data_frame.size>0)&len(basic_info_feautes)>0):
+    if((data_frame.size>0)&(len(basic_info_feautes)>0)):
         DF[basic_info_feautes] = rrd(data_frame,sort_column,asc).reset_index(drop=True)[basic_info_feautes]
     return rrd(DF,sort_column)
     
