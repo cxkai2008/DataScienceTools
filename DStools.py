@@ -603,7 +603,7 @@ def plotHeatMap(corrDF , featureList,path_file):
     p.xaxis.major_label_orientation = 1.0
     show(p)
     
-def heatMap(DF , path_file, x_size=3500, y_size=3500):
+def heatMap(DF , path_file, x_size=3500, y_size=3500,font_size="15pt"):
     featureList=DF.columns.tolist()
     indexList=DF.index.tolist()
     DF.columns.name = 'Features'
@@ -624,7 +624,7 @@ def heatMap(DF , path_file, x_size=3500, y_size=3500):
     p.axis.major_tick_line_color = None
     p.axis.major_label_standoff = 0
     p.xaxis.major_label_orientation = 1.0
-    p.axis.major_label_text_font_size = "15pt"
+    p.axis.major_label_text_font_size = font_size
     if path_file.endswith('png'):
         export_png(p, filename=path_file)
     else:
