@@ -285,8 +285,9 @@ plotHeatMap(corrDF=DF.corr() , featureList=['1','2','3'],path_file='/abc/abc/hea
 * x_size: the width of the plot, the more columns that DF has, the larger x_size should be
 * y_size: the height of the plot, the more row that DF has, the larger y_size should be
 path_file: the storing path and the file name should end with '.png'(There are more packages, such as phantomjs, needed to be installed if you want to have png output file) or '.html'(this is an easier solution)
+* font_size: the font size of the labels.
 ```
-heatMap(DF,x_size=9000,y_size=4500,path_file='/abc/abc/heatmap.html')
+heatMap(DF,x_size=9000,y_size=4500,path_file='/abc/abc/heatmap.html',font_size='15pt')
 ```
 ### Plot histogram based on a list of values. 
 * 'title': the title of histogram 
