@@ -21,7 +21,7 @@ import math
 from os import listdir
 from bokeh.layouts import gridplot
 from bokeh.models import Range1d,LabelSet,Label,ColumnDataSource,HoverTool,WheelZoomTool,PanTool,BoxZoomTool,ResetTool,SaveTool,BasicTicker,ColorBar,LinearColorMapper,PrintfTickFormatter,DataSource
-from bokeh.palettes import brewer,inferno,magma,viridis,grey
+from bokeh.palettes import brewer,inferno,magma,viridis,grey,Category10
 from bokeh.plotting import figure, show, output_file
 from bokeh.transform import transform,factor_cmap
 from bokeh.io import export_png
@@ -997,7 +997,11 @@ def tSNEPlot(oriData,data_Indices,read_list,color_col,storing_loc,size_col = 5, 
     return tSNE_DF_2d
 
 def plotColorScatter(DataFrame ,xvalue = '0',yvalue = '1', sizevalue = 'size', outputFilePath='/abc/test.html',plotWidth = 750, plotHeight = 750, readList = ['1','2'],titleName='tSNE', colorColumn="Category", colorPattern=viridis):
-    color_map = factor_cmap(colorColumn,factors=DataFrame[colorColumn].unique(),palette=colorPattern(len(DataFrame[colorColumn].unique())))
+    factors = DataFrame[colorColumn].unique()
+    if (len(factors)>2) & (len(factors)<11):
+        color_map = factor_cmap(colorColumn,factors=factors,palette=Category10[10])
+    else:
+        color_map = factor_cmap(colorColumn,factors=factors,palette=colorPattern(len(factors)))
     hover = HoverTool()
     tooltipString = ""
     for ele in readList:
