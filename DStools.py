@@ -31,6 +31,8 @@ from itertools import cycle
 
 #####print table#####
 def ppt(table,lines=30,maxWidth = 18,minWidth=10,keepDecimal=2,lineWidth=170):
+    if table.shape[0]<1000:
+        lines=table.shape[0]
     if(minWidth<5):
         minWidth=5
     if(maxWidth<minWidth):
