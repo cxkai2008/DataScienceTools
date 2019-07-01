@@ -1084,9 +1084,10 @@ def xgboost_multi_classification(input_df,numeric_features_validation,iteration=
     print(pArray.mean(),pArray.std())
     return pArray,fullWrongList,fullTest,np.array(fullPredict),labelList
 
-def combined_eXGBT_classifier(training_set,numeric_features_validation,testing_set,label_column = 'Category',max_depth=2,num_class=4,num_trees=50):
+def combined_eXGBT_classifier(training_set,numeric_features_validation,testing_set,label_column = 'Category',max_depth=2,num_trees=50):
+    num_class=len(training_set[label_column].unique().tolist())
     df_te = testing_set.copy()
-    for i in set(training_set[label_column].unique().tolist()):
+    for i in training_set[label_column].unique().tolist():
         df_te,full_test,full_predict,label_list =xgboostModel_for_venn(training_set,df_te,numeric_features_validation,label =i,category = label_column,num_round = num_trees)
     XGBData = training_set.copy()
     selectedData_Indices = numeric_features_validation  #  data_Indices
