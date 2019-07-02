@@ -937,52 +937,56 @@ def generate_label_from_probability(p0,p1,testScores,isprint=True):
     return t_p,full_test
 ##########End of Venn-Abers Predictor##########
 
-def xgboostModel_for_venn(train,test ,selectedData_Indices,label = 'Control',category = 'Category',num_round = 100):
-    XGBTrain = train.reset_index(drop=True).copy()
-    XGBTest = test.reset_index(drop=True).copy()
+def xgboostModel_for_venn(train,test,selectedData_Indices,n_vap=10,label = 'Control',category = 'Category',num_round = 100):
+    train_temp=train.copy()
+    test_temp=test.copy()
+    train_temp['cv_id']=train_temp.index
     labelList = [label,'ZZZZZZZ']
-    XGBTrain.loc[XGBTrain[category]!=label,category]='ZZZZZZZ'
-    XGBTest.loc[XGBTest[category]!=label,category]='ZZZZZZZ'
-    regex = re.compile(r"\[|\]|<|\ ", re.IGNORECASE)
-    param = {'max_depth':2,'eta':0.3,'silent':1,'objective':'binary:logistic','learningrate':0.1}  #'binary:logistic'   'multi:softprob' 'num_class':2,
-    accuracy = []
-    XGBTrain.columns = [regex.sub('_',col) for col in XGBTrain.columns.values]
-    XGBTest.columns = [regex.sub('_',col) for col in XGBTest.columns.values]
-    selectedData_Indices = [regex.sub('_',col) for col in selectedData_Indices]
-    X_train=XGBTrain[selectedData_Indices]
-    X_test=XGBTest[selectedData_Indices]
-    Y_train=XGBTrain[category]
-    Y_test=XGBTest[category]
-    labelEncoder = LabelEncoder()
-    Y_train = labelEncoder.fit_transform(Y_train.values)
-    Y_test = labelEncoder.fit_transform(Y_test.values)
+    train_temp.loc[train_temp[category]!=label,category]='ZZZZZZZ'
+    test_temp.loc[test_temp[category]!=label,category]='ZZZZZZZ'
     score_and_label_list=[]
     test_score=[]
-    fullTest=np.array([])
-    fullPredict=[]
-    fullTest=np.concatenate((fullTest,Y_test),axis=0)
+    regex = re.compile(r"\[|\]|<|\ ", re.IGNORECASE)
+    param = {'max_depth':2,'eta':0.3,'silent':1,'objective':'binary:logistic','learningrate':0.1}  #'binary:logistic'   'multi:softprob' 'num_class':2,
+    train_temp.columns = [regex.sub('_',col) for col in train_temp.columns.values]
+    test_temp.columns = [regex.sub('_',col) for col in test_temp.columns.values]
+    selectedData_Indices = [regex.sub('_',col) for col in selectedData_Indices]
+    labelEncoder = LabelEncoder()
+    for _ in range(n_vap):
+        X_train,X_test,Y_train,Y_test = cross_validation_split_with_unbalance_data(train_temp.reset_index(drop=True).copy(),selectedData_Indices,label=category,id_column='cv_id',test_size=0.2,handle_unbalance=False)
+        Y_train = labelEncoder.fit_transform(Y_train.values)
+        Y_test = labelEncoder.fit_transform(Y_test.values)
+        dtrain = xgb.DMatrix(X_train,label=Y_train)
+        dtest = xgb.DMatrix(X_test,label=Y_test)
+        bst = xgb.train(param,dtrain,num_round,feval='map5eval',maximize=True)
+        preds = bst.predict(dtest)
+        best_preds = np.asarray([round(value) for value in preds])
+        Y_test = pd.DataFrame(Y_test).reset_index()
+        for i in range(0,len(best_preds)):
+            score_and_label_list.append((preds[i],Y_test.iloc[i][0]))
+    count=0
+    X_train=train_temp[selectedData_Indices]
+    X_test=test_temp[selectedData_Indices]
+    Y_train=train_temp[category]
+    Y_test=test_temp[category]
+    Y_train = labelEncoder.fit_transform(Y_train.values)
+    Y_test = labelEncoder.fit_transform(Y_test.values)
     dtrain = xgb.DMatrix(X_train,label=Y_train)
     dtest = xgb.DMatrix(X_test,label=Y_test)
     bst = xgb.train(param,dtrain,num_round,feval='map5eval',maximize=True)
     preds = bst.predict(dtest)
-    fullPredict=fullPredict+list(preds)
     best_preds = np.asarray([round(value) for value in preds])
-    precision = precision_score(Y_test,best_preds,average='macro')
     Y_test = pd.DataFrame(Y_test).reset_index()
-    count=0
     for i in range(0,len(best_preds)):
-        score_and_label_list.append((preds[i],Y_test.iloc[i][0]))
         test_score.append(preds[i])
         if(best_preds[i] != Y_test.iloc[i][0]):
             count=count+1
-    accuracy.append(1-count/len(best_preds))
-    pArray = np.array(accuracy)
-    fullPredict=[np.array([1-i,i]) for i in fullPredict]
+    fullPredict=[np.array([1-i,i]) for i in list(preds)]
     p0,p1 = ScoresToMultiProbs(score_and_label_list,test_score)
     label_from_probability,full_predic_venn = generate_label_from_probability(p0,p1,test_score,False)
     readable_pre=[i[0] for i in full_predic_venn]
     test[label]=readable_pre
-    return test,fullTest,np.array(fullPredict),labelList
+    return test,Y_test[0].to_numpy(),np.array(fullPredict),labelList
 
 def tSNEPlot(oriData,data_Indices,read_list,color_col,storing_loc,size_col = 5, iters=1000, perp=2, title='tSNE',num_components=2):
     tsne = TSNE(n_components=num_components,random_state=0,n_iter=iters,perplexity=perp)
@@ -1086,11 +1090,11 @@ def xgboost_multi_classification(input_df,numeric_features_validation,iteration=
     print(pArray.mean(),pArray.std())
     return pArray,fullWrongList,fullTest,np.array(fullPredict),labelList
 
-def combined_eXGBT_classifier(training_set,numeric_features_validation,testing_set,label_column = 'Category',max_depth=2,num_trees=50):
+def combined_eXGBT_classifier(training_set,numeric_features_validation,testing_set,n_vap=10,label_column = 'Category',max_depth=2,num_trees=50):
     num_class=len(training_set[label_column].unique().tolist())
     df_te = testing_set.copy()
     for i in training_set[label_column].unique().tolist():
-        df_te,full_test,full_predict,label_list =xgboostModel_for_venn(training_set,df_te,numeric_features_validation,label =i,category = label_column,num_round = num_trees)
+        df_te,full_test,full_predict,label_list =xgboostModel_for_venn(training_set,df_te,numeric_features_validation,n_vap,label =i,category = label_column,num_round = num_trees)
     XGBData = training_set.copy()
     selectedData_Indices = numeric_features_validation  #  data_Indices
     regex = re.compile(r"\[|\]|<|\ ", re.IGNORECASE)
@@ -1115,7 +1119,14 @@ def combined_eXGBT_classifier(training_set,numeric_features_validation,testing_s
 def transform_predict_result_DF(predict_result_DF,label_col,threshold=0.1):
     id_col='predict_result_DF_indices'
     predict_result_DF[id_col]=predict_result_DF.index
-    label_list = predict_result_DF[label_col].unique().tolist()
+    #This is for specific purposes.
+    try: 
+        label_list = predict_result_DF[label_col].unique().tolist()
+        predict_result_DF['max']=predict_result_DF[label_list].T.max()
+    except KeyError as keyE: 
+        label_list = predict_result_DF['multi_eXGBT_pre_lable'].unique().tolist()
+        predict_result_DF['max']=predict_result_DF[label_list].T.max()
+        print('Notice: The predicted labels were used instead of full labels')
     predict_result_DF['max']=predict_result_DF[label_list].T.max()
     min_Filter = predict_result_DF['max']<threshold
     predict_result_DF.loc[min_Filter,'F_label']=predict_result_DF.loc[min_Filter,'multi_eXGBT_pre_lable']
