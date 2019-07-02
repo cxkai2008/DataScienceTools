@@ -110,6 +110,17 @@ Transform row or column vectors of a matrix into unit vectors(sum(vec)=1,min(vec
 ```
 scaled_matrix = generate_unit_modules(mx, isrow=True, is_scale=True, simple_scale=True)
 ```
+### Scale dataframe, makes the summation of each row (sample) is 1. 
+Scale the dataframe into the one comprised by a matrix of which each row is a unit vector, then add the mean of each original row as a new feature in order to keep the information of the original scale.
+* rna_df: the input dataframe
+* numeric_features: the numeric features which need to be scaled
+* id_col: the name of the column which is used as ID (or in other words index).
+* other_categorical_features: other categorical features except id_col in rna_df needed to be kept in output.
+* unified_df: the scaled dataframe with columns of numeric_features,id_col,other_categorical_features and the new generated columnn of 'mean_from_unify_df'
+* new_numeric_features: numeric_features and the new generated columnn of 'mean_from_unify_df', it can be used as the numeric features for building classification models.
+```
+unified_df,new_numeric_features = unify_df(rna_df,numeric_features,id_col,other_categorical_features)
+```
 ## SUPERVISED LEARNING
 ### Handle unbalanced data. 
 The sample size of minor categories are amplified to as many as the major category by randomly selecting 2 samples and use the average of the two as the newly generated sample.
