@@ -344,12 +344,13 @@ def unify_df(rna_df,numeric_features,id_col,other_categorical_features):
     del rna_scaled_df['temp_indices_within_this_function']
     temp_df=rna_df.copy()
     temp_df.index=temp_df[id_col]
-    temp_df = temp_df[numeric_features].T.describe().T[['mean']]
+    #control the scale of the mean by dividing by len(numeric_features)
+    temp_df = pd.DataFrame(median_transform(temp_df[numeric_features].T.describe().T['mean'],1,0)/len(numeric_features))
     temp_df.columns=['mean_from_unify_df']
     rna_scaled_df=pd.merge(rna_scaled_df,temp_df,left_index=True,right_index=True)
     rna_scaled_df=rna_scaled_df.reset_index(drop=True)
     new_numeric_features=numeric_features+['mean_from_unify_df']
-    return rna_scaled_df,new_numeric_features    
+    return rna_scaled_df,new_numeric_features
 
 #####find distict items in two lists#####
 def findDistinct(ind1,ind2):
