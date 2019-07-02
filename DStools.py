@@ -1042,9 +1042,10 @@ def print_full_wrong_list(full_wrong_list):
     for i in s:
         print(i)
 
-def xgboost_multi_classification(input_df,numeric_features_validation,iteration=10,test_size=0.2,max_depth=2,num_class=4,num_trees=50,label_column='Category',id_column='PlateID',handle_unbalance=True,readList=['PlateID','Compound Name']):
+def xgboost_multi_classification(input_df,numeric_features_validation,iteration=10,test_size=0.2,max_depth=2,num_trees=50,label_column='Category',id_column='PlateID',handle_unbalance=True,readList=['PlateID','Compound Name']):
     XGBData = input_df.copy()
-    selectedData_Indices = numeric_features_validation  #  data_Indices
+    selectedData_Indices = numeric_features_validation.copy()  #  data_Indices
+    num_class=len(XGBData[label_column].unique().tolist())
     regex = re.compile(r"\[|\]|<|\ ", re.IGNORECASE)
     param = {'max_depth':max_depth,'eta':0.3,'silent':1,'objective':'multi:softprob','num_class':num_class,'learningrate':0.1} 
     num_round = num_trees
