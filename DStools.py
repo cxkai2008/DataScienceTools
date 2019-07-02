@@ -1151,7 +1151,6 @@ def transform_predict_result_DF(predict_result_DF,label_col,threshold=0.1):
         label_list = predict_result_DF['multi_eXGBT_pre_label'].unique().tolist()
         predict_result_DF['max']=predict_result_DF[label_list].T.max()
         print('Notice: The predicted labels were used instead of full labels')
-    predict_result_DF['max']=predict_result_DF[label_list].T.max()
     min_Filter = predict_result_DF['max']<threshold
     predict_result_DF.loc[min_Filter,'F_label']=predict_result_DF.loc[min_Filter,'multi_eXGBT_pre_label']
     max_Filter = predict_result_DF['max']>=threshold
