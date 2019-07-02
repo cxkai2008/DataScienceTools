@@ -6,6 +6,7 @@ import random
 import matplotlib
 import textwrap
 import scipy.spatial.distance as ssd
+import warnings 
 from sklearn import tree
 from sklearn.manifold import TSNE
 from sklearn.ensemble import RandomForestClassifier
@@ -28,6 +29,9 @@ from bokeh.io import export_png
 from graphviz import Source
 from itertools import cycle
 
+warnings.simplefilter("error")
+warnings.filterwarnings('ignore', category=PendingDeprecationWarning) 
+warnings.filterwarnings('ignore', category=ResourceWarning) 
 
 #####print table#####
 def ppt(table,lines=30,maxWidth = 18,minWidth=10,keepDecimal=2,lineWidth=170):
@@ -1133,7 +1137,7 @@ def combined_eXGBT_classifier(training_set,numeric_features_validation,testing_s
     preds = bst.predict(dtest)
     best_preds = np.asarray([np.argmax(line) for line in preds])
     readable_pre=[labelList[i] for i in best_preds]
-    df_te['multi_eXGBT_pre_lable']=readable_pre
+    df_te['multi_eXGBT_pre_label']=readable_pre
     return df_te
 
 def transform_predict_result_DF(predict_result_DF,label_col,threshold=0.1):
@@ -1144,12 +1148,12 @@ def transform_predict_result_DF(predict_result_DF,label_col,threshold=0.1):
         label_list = predict_result_DF[label_col].unique().tolist()
         predict_result_DF['max']=predict_result_DF[label_list].T.max()
     except KeyError as keyE: 
-        label_list = predict_result_DF['multi_eXGBT_pre_lable'].unique().tolist()
+        label_list = predict_result_DF['multi_eXGBT_pre_label'].unique().tolist()
         predict_result_DF['max']=predict_result_DF[label_list].T.max()
         print('Notice: The predicted labels were used instead of full labels')
     predict_result_DF['max']=predict_result_DF[label_list].T.max()
     min_Filter = predict_result_DF['max']<threshold
-    predict_result_DF.loc[min_Filter,'F_label']=predict_result_DF.loc[min_Filter,'multi_eXGBT_pre_lable']
+    predict_result_DF.loc[min_Filter,'F_label']=predict_result_DF.loc[min_Filter,'multi_eXGBT_pre_label']
     max_Filter = predict_result_DF['max']>=threshold
     for i in label_list:
         analogue_filter = predict_result_DF['max']==predict_result_DF[i]
