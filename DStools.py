@@ -1081,7 +1081,7 @@ def xgboost_multi_classification(input_df,numeric_features_validation,iteration=
                 count=count+1
                 string=''
                 for l in range(0,len(readList)):
-                    string = string + str(XGBData.reset_index().iloc[X_test.index[i]][readList[l]])+'---'
+                    string = string + str(XGBData.reset_index().iloc[X_test.reset_index(drop=True).index[i]][readList[l]])+'---'
                 singleWrongList = [labelList[best_preds[i]],string+labelList[Y_test.iloc[i][label]],str(j),preds[i]]
                 fullWrongList.append(singleWrongList)
         print('------------------accuracy = '+str(1-count/len(best_preds))+'------------------')
