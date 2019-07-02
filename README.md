@@ -87,7 +87,7 @@ matrix = mtd(mtx,numeric_features, data_frame=pd.DataFrame(),basic_info_feautes=
 ```
 ### Series scaling. 
 Scale list based on different criteria. The scaling methods vary based on the input data. For widely ranged data this algorithm use median rather than log transformation to scale it.
-* lst: the input Series, one column of a dataframe
+* lst: the input Series(one column of a dataframe) or nparray
 * scale: the range of scaled list
 * lowerbound: the minima of the scaled list
 ```
