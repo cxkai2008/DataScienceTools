@@ -333,6 +333,24 @@ def median_transform(lst,scale,lowerbound):
                 scaled_list[i]=scale_transform2(scaled_list[i],upper_list,0.5*(scale+lowerbound),0.5*(scale+lowerbound))
         return scaled_list
 
+def unify_df(rna_df,numeric_features,id_col,other_categorical_features):
+    rna_scaled_df=rna_df.copy()
+    rna_scaled_df['temp_indices_within_this_function']=rna_scaled_df[id_col]
+    temp_mx = dtm(rna_scaled_df,numeric_features,sort_column='temp_indices_within_this_function')
+    temp_mx = generate_unit_modules(temp_mx, isrow=True, is_scale=True, simple_scale=True)
+    rna_scaled_df = mtd(temp_mx,numeric_features,rna_scaled_df,other_categorical_features+['temp_indices_within_this_function'], sort_column='temp_indices_within_this_function',asc=True)
+    rna_scaled_df.index=rna_scaled_df['temp_indices_within_this_function']
+    rna_scaled_df[id_col]=rna_scaled_df['temp_indices_within_this_function']
+    del rna_scaled_df['temp_indices_within_this_function']
+    temp_df=rna_df.copy()
+    temp_df.index=temp_df[id_col]
+    temp_df = temp_df[numeric_features].T.describe().T[['mean']]
+    temp_df.columns=['mean_from_unify_df']
+    rna_scaled_df=pd.merge(rna_scaled_df,temp_df,left_index=True,right_index=True)
+    rna_scaled_df=rna_scaled_df.reset_index(drop=True)
+    new_numeric_features=numeric_features+['mean_from_unify_df']
+    return rna_scaled_df,new_numeric_features    
+
 #####find distict items in two lists#####
 def findDistinct(ind1,ind2):
     return (list(np.setdiff1d(ind1, ind2)),list(np.setdiff1d(ind2, ind1)))
