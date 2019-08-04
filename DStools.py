@@ -240,15 +240,20 @@ def combined_conditions_filter(condition_map,data_frame,index1,index2):
 #Unit vectors transformation of a Matrix. 
 def generate_unit_modules(mx, isrow=True, is_scale=True, simple_scale=True):
     test = mx.copy()
+    if(mx.min()<0):
+        is_scale=True
+        print('there is a negative value, the matrix is auto scaled')
     if(is_scale):
         test=scale_matrix(test,isrow=isrow,simple_scale=simple_scale)
     if(isrow):
         for i in range(0,len(test)):
-            test[i] = test[i]/test[i].sum()
+            if(test[i].sum()!=0):
+                test[i] = test[i]/test[i].sum()
     else:
         test_t = np.transpose(test)
         for i in range(0,len(test_t)):
-            test_t[i] = test_t[i]/test_t[i].sum()
+            if(test_t[i].sum()!=0):
+                test_t[i] = test_t[i]/test_t[i].sum()
         test = np.transpose(test_t)
     return test
 
@@ -272,11 +277,23 @@ def scale_matrix(tst,isrow=True,simple_scale=True):
     if(simple_scale):
         if(isrow):
             for i in range(0,len(test)):
-                test[i] = (test[i]-test[i].min())/(test[i].max() - test[i].min())
+                if(test[i].max()==test[i].min()):
+                    if(test[i].max()==0):
+                        test[i]=np.zeros(len(test[i]))
+                    else:
+                        test[i]=np.ones(len(test[i]))
+                else:
+                    test[i] = (test[i]-test[i].min())/(test[i].max() - test[i].min())
         else:
             test_t = np.transpose(test)
             for i in range(0,len(test_t)):
-                test_t[i] = (test_t[i]-test_t[i].min())/(test_t[i].max() - test_t[i].min())
+                if(test[i].max()==test[i].min()):
+                    if(test[i].max()==0):
+                        test[i]=np.zeros(len(test[i]))
+                    else:
+                        test[i]=np.ones(len(test[i]))
+                else:
+                    test_t[i] = (test_t[i]-test_t[i].min())/(test_t[i].max() - test_t[i].min())
             test = np.transpose(test_t)
     else:
         if(isrow):
@@ -310,18 +327,37 @@ def mtd(mtx,numeric_features, data_frame=pd.DataFrame(),basic_info_feautes=[], s
     return rrd(DF,sort_column)
     
 def scale_transform1(lst1,lst2,scale,lowerbound):
-    return ((lst1-lst2.min())/np.ptp(lst2))*scale+lowerbound
+    if(len(lst1)!=len(lst2)):
+        print('lst1 and lst2 are not in the same size')
+        return None
+    if(lst2.min()==lst2.max()):
+        if(lst2.min()==0):
+            return [0 for _ in range(len(lst))]
+        else:
+            return [1 for _ in range(len(lst))]
+    return ((lst1-lst2.min())/(lst2.max()-lst2.min()))*scale+lowerbound
     
 def scale_transform2(lst1,lst2,scale,lowerbound):
+    if(len(lst1)!=len(lst2)):
+        print('lst1 and lst2 are not in the same size')
+        return None
+    if(min(lst1.min(),lst2.min())<0):
+        print('warning: there is a negative value')
+        return None
+    if(lst2.max()==0):
+        print('error: the max value is equal to zero')
+        return None
     return (lst1/lst2.max())*scale+lowerbound
+
 #scale list
 def median_transform(lst,scale,lowerbound):
     if(len(set(lst))<2):
         return np.full(len(lst), (scale+lowerbound)/2)
-    if(lst.max()/lst.mean()<2):
-        return 0.5*lst/lst.mean()*scale+lowerbound
-    elif((lst.max()/lst.min()<10)&(lst.mean()/lst.min()>2)):
-        return scale_transform1(lst,lst,scale,lowerbound)
+    if(lst.min()==lst.max()):
+        if(lst.min()==0):
+            return [0 for _ in range(len(lst))]
+        else:
+            return [1 for _ in range(len(lst))]
     else: 
         scaled_list=scale_transform1(lst,lst,scale,lowerbound)
         scaled_list = scaled_list/np.median(scaled_list)
@@ -349,7 +385,7 @@ def unify_df(rna_df,numeric_features,id_col,other_categorical_features):
     temp_df=rna_df.copy()
     temp_df.index=temp_df[id_col]
     #control the scale of the mean by dividing by len(numeric_features)
-    temp_df = pd.DataFrame(median_transform(temp_df[numeric_features].T.describe().T['mean'],1,0)/len(numeric_features))
+    temp_df = pd.DataFrame(scale_transform1(temp_df[numeric_features].T.describe().T['mean'],temp_df[numeric_features].T.describe().T['mean'],1,0)/len(numeric_features))
     temp_df.columns=['mean_from_unify_df']
     rna_scaled_df=pd.merge(rna_scaled_df,temp_df,left_index=True,right_index=True)
     rna_scaled_df=rna_scaled_df.reset_index(drop=True)
@@ -1027,8 +1063,8 @@ def tSNEPlot(oriData,data_Indices,read_list,color_col,storing_loc,size_col = 5, 
 
 def plotColorScatter(DataFrame ,xvalue = '0',yvalue = '1', sizevalue = 'size', outputFilePath='/abc/test.html',plotWidth = 750, plotHeight = 750, readList = ['1','2'],titleName='tSNE', colorColumn="Category", colorPattern=viridis):
     factors = DataFrame[colorColumn].unique()
-    if (len(factors)>2) & (len(factors)<11):
-        color_map = factor_cmap(colorColumn,factors=factors,palette=Category10[10])
+    if len(factors)<8:
+        color_map = factor_cmap(colorColumn,factors=factors,palette=['#f03b20','#feb24c','#ffeda0','#636363','#a1d99b','#31a354','#3182bd'])
     else:
         color_map = factor_cmap(colorColumn,factors=factors,palette=colorPattern(len(factors)))
     hover = HoverTool()
@@ -1168,3 +1204,244 @@ def transform_predict_result_DF(predict_result_DF,label_col,threshold=0.1):
     temp3=temp3.merge(predict_result_DF, on=id_col, how='left')[[id_col,'confidence','predicted_label',label_col]]
     fake_filter = temp3[id_col].astype(str).str.startswith('fake')
     return predict_result_DF,temp3[~fake_filter]
+
+def generate_expressed_matrix(gene_dfc,select_gene ,group_col = 'group',id_col='cell'):
+    np_temp = gene_dfc[select_gene].to_numpy()
+    lst=[]
+    for i in np_temp:
+        lst_t=[]
+        for j in i:
+            if j==0:
+                lst_t.append(0)
+            else:
+                lst_t.append(1)
+        lst.append(lst_t)
+    lst=np.array(lst)
+    zero_test_df = pd.DataFrame(lst,columns=select_gene)
+    zero_test_df[[id_col,group_col]]=gene_dfc[[id_col,group_col]]
+    return zero_test_df
+
+def Drode_DE_gene_detection(gene_dfc,select_gene,feature='gene',id_col='cell',group_col='group',is_unify=True):
+    if(is_unify):
+        gene_dfc_unify,_ = unify_df(gene_dfc,select_gene,id_col,[group_col])
+    else:
+        gene_dfc_unify=gene_dfc.copy()
+    gene_dfc_unify= gene_dfc_unify.reset_index(drop=True)
+    zero_test_df = generate_expressed_matrix(gene_dfc = gene_dfc_unify,select_gene = select_gene,group_col = group_col,id_col=id_col)
+    differentiated_df = pd.DataFrame()
+    for gene in select_gene:
+        print(gene)
+        temp = zero_test_df.groupby(by=[group_col,gene],as_index=False)[[id_col]].count().copy()
+        temp = pd.pivot_table(temp, index=group_col, columns=gene, values=id_col) 
+        if zero_test_df[zero_test_df[gene]==0].shape[0]==0:
+            temp[0]=np.zeros(temp.shape[0])
+            temp['non_0_rate']=np.ones(temp.shape[0])
+        elif zero_test_df[zero_test_df[gene]==1].shape[0]==0:
+            temp[1]=np.zeros(temp.shape[0])
+            temp['non_0_rate']=np.zeros(temp.shape[0])
+        else:
+            temp=temp.fillna(0)
+            temp['non_0_rate']=temp[1]/(temp[0]+temp[1])
+        temp['size']=temp[0]+temp[1]
+        temp[group_col]=temp.index
+        temp_np = temp.to_numpy()
+        lst=[]
+        for i in range(len(temp_np)):
+            for j in range(i+1,len(temp_np)):
+                x = gene_dfc_unify[(gene_dfc_unify[group_col]==str(temp_np[i][4])) & (gene_dfc_unify[gene]!=0)][gene].to_numpy()
+                y = gene_dfc_unify[(gene_dfc_unify[group_col]==str(temp_np[j][4])) & (gene_dfc_unify[gene]!=0)][gene].to_numpy()
+                true_mean_x = gene_dfc[(gene_dfc[group_col]==str(temp_np[i][4])) & (gene_dfc[gene]!=0)][gene].to_numpy()
+                true_mean_y = gene_dfc[(gene_dfc[group_col]==str(temp_np[j][4])) & (gene_dfc[gene]!=0)][gene].to_numpy()
+                if((len(x)<3) & (len(y)<3)):
+                    continue
+                elif len(x)<3:
+                    mean_x=0
+                    mean_y=y.mean()
+                    same_distribution_pval = 1
+                elif len(y)<3:
+                    mean_x=x.mean()
+                    mean_y=0
+                    same_distribution_pval = 1
+                else:
+                    mean_x=x.mean()
+                    mean_y=y.mean()
+                    same_distribution_pval = (ks_2samp(x, y)[1])
+                if(len(true_mean_x)>0):
+                    true_mean_x=true_mean_x.mean()
+                else:
+                    true_mean_x=0
+                if(len(true_mean_y)>0):
+                    true_mean_y=true_mean_y.mean()
+                else:
+                    true_mean_y=0
+                if temp_np[i][0]+temp_np[j][0]==0: #all zeros
+                    same_0rate_pval=1
+                elif temp_np[i][0]+temp_np[j][0]==temp_np[i][3]+temp_np[j][3]: #all ones
+                    same_0rate_pval=1
+                else:
+                    zscore, same_0rate_pval = sm.stats.proportions_ztest([temp_np[i][0], temp_np[j][0]], [temp_np[i][3], temp_np[j][3]], alternative='two-sided')
+                if same_0rate_pval<=0.05:
+                    differentiated_pval=1-same_0rate_pval
+                elif same_distribution_pval<=0.05:
+                    differentiated_pval=0.95-same_distribution_pval
+                else:
+                    differentiated_pval=0.9-same_0rate_pval*same_distribution_pval
+                lst.append([gene,temp_np[i][4],temp_np[j][4],differentiated_pval,1-same_0rate_pval,1-same_distribution_pval,temp_np[i][2],temp_np[j][2],temp_np[i][1],temp_np[j][1],true_mean_x,true_mean_y])
+        temp_df = pd.DataFrame(lst,columns=[feature,'group_1','group_2','deprob','d0prob','d1prob','posrate_1','posrate_2','pos_1','pos_2','posmean_1','posmean_2'])
+        differentiated_df=differentiated_df.append(temp_df)
+    return differentiated_df
+
+def select_de_gene(drode_de_gene_df,score_col='deprob',feature='gene',num=20):
+    drode_de_gene_df = drode_de_gene_df[drode_de_gene_df[score_col]>0.9].copy()
+    drode_de_gene_df['group']=drode_de_gene_df['group_1']+'***'+drode_de_gene_df['group_2']
+    groups=drode_de_gene_df['group'].unique().tolist()
+    group_df=pd.DataFrame()
+    for group in groups:
+        temp_df = drode_de_gene_df[drode_de_gene_df['group']==group][['gene',score_col,'group']].copy()
+        temp_df = temp_df.sort_values(by=score_col,ascending=False).reset_index(drop=True)
+        group_df = group_df.append(temp_df.iloc[0:num])
+    de_gene_dWT4 = group_df[feature].unique().tolist()
+    return de_gene_dWT4
+
+def cluster_cells(gene_dfc,select_gene,group='CD4SP',group_col='group',id_col='cell',path='/home/ivan/Desktop/Project2/MyData/pipeline'):
+    cluster_df = gene_dfc[gene_dfc[group_col]==group][select_gene+[id_col,group_col]]
+    cluster_df = cluster_df.reset_index(drop=True)
+    cluster_df = rrd(cluster_df,id_col,True,False)
+    cluster_df = cluster_df.replace(0,1e-7)
+    mx=cluster_df[select_gene].to_numpy()
+    scaled_matrix = generate_unit_modules(mx, isrow=True, is_scale=False, simple_scale=True)
+    dis_mx=[]
+    for i in range(len(scaled_matrix)):
+        lst=[]
+        for j in range(len(scaled_matrix)):
+            lst.append(entropy(scaled_matrix[i], scaled_matrix[j], base=None))
+        dis_mx.append(lst)
+    dis_mx = np.array(dis_mx)
+    dis_df = pd.DataFrame(dis_mx,columns=cluster_df[id_col].tolist())
+    dis_df.index = cluster_df[id_col].tolist()
+    lst = plot_heatmap_for_kmeans_groups(data_frame=dis_df,numeric_features=cluster_df[id_col].tolist(),path=path, clusters=1, is_row=True)
+    return lst
+
+def de_gene_description(drode_de_gene_df):
+    drode_de_gene_df_2=drode_de_gene_df.copy()
+    drode_de_gene_df_2['group_1']=drode_de_gene_df['group_2']
+    drode_de_gene_df_2['group_2']=drode_de_gene_df['group_1']
+    drode_de_gene_df_2['posmean_1']=drode_de_gene_df['posmean_2']
+    drode_de_gene_df_2['posmean_2']=drode_de_gene_df['posmean_1']
+    drode_de_gene_df_2['posrate_1']=drode_de_gene_df['posrate_2']
+    drode_de_gene_df_2['posrate_2']=drode_de_gene_df['posrate_1']
+    drode_de_gene_df_2=drode_de_gene_df_2.append(drode_de_gene_df)
+    cate_lst = drode_de_gene_df_2['group_1'].unique().tolist()
+    temp_mean_df = pd.pivot_table(drode_de_gene_df_2, index='gene', columns='group_2', values='posmean_2')
+    temp_mean_df = temp_mean_df[cate_lst]
+    temp_mean_df['name']=temp_mean_df.index+'_expression_level'
+    temp_mean_df.index=temp_mean_df['name']
+    temp_mean_df=temp_mean_df.reset_index(drop=True)
+    temp_mean_df = temp_mean_df.T
+    temp_mean_df.columns = temp_mean_df.loc['name']
+    temp_mean_df = temp_mean_df.loc[cate_lst]
+    temp_mean_df.index = cate_lst
+    temp_rate_df= pd.pivot_table(drode_de_gene_df_2, index='gene', columns='group_2', values='posrate_2')
+    temp_rate_df = temp_rate_df[cate_lst]
+    temp_rate_df['name']=temp_rate_df.index+'_expression_rate'
+    temp_rate_df.index=temp_rate_df['name']
+    temp_rate_df=temp_rate_df.reset_index(drop=True)
+    temp_rate_df = temp_rate_df.T
+    temp_rate_df.columns = temp_rate_df.loc['name']
+    temp_rate_df = temp_rate_df.loc[cate_lst]
+    temp_rate_df.index = cate_lst
+    return temp_mean_df,temp_rate_df
+
+def plot_line_charts(df1,df2=None,width=1200,height=900,titleName='title',xlabel='subpopulations',ylabel='expression_level',ylabel_sec='expression_rate',outputFilePath = "/home/ivan/Desktop/Project2/twin_axis.html"):
+    df = df1.copy()
+    tools= [WheelZoomTool(),PanTool(),BoxZoomTool(),ResetTool(),SaveTool()]
+    p = figure(x_range=df.index.tolist(),plot_width = width, plot_height = height, \
+               tools=tools,title=titleName,toolbar_location='right',x_axis_label=xlabel,\
+               y_axis_label=ylabel,background_fill_color='white',title_location = 'above')
+    if len(df.columns.tolist())<6:
+        palette=['#f03b20','#feb24c','#3182bd','#636363','#31a354']
+    else:
+        palette=viridis(len(df.columns.tolist()))
+    p.y_range = Range1d(min(0,df.values.min()-abs(df.values.min()*0.05)), df.values.max()+abs(df.values.max()*0.05))
+    col_lst=df.columns.tolist()
+    df['index']=df.index
+    for i in range(0,len(col_lst)):
+        col = col_lst[i]
+        p.line(df.index, df[col], legend=col, line_width=3, color=palette[i])
+        p.circle(df.index, df[col], size=7,color=palette[i])
+    if df2 is not None:
+        df = df2.copy()
+        y_column2_range = 'expression_rate' + "_range"
+        p.extra_y_ranges = {y_column2_range: Range1d(start=min(0,df.values.min()-abs(df.values.min()*0.05)),end=df.values.max()+abs(df.values.max()*0.05))}
+        p.add_layout(LinearAxis(y_range_name=y_column2_range,axis_label=ylabel_sec), "right")
+        col_lst=df.columns.tolist()
+        df['index']=df.index
+        source= ColumnDataSource(df)
+        for i in range(0,len(col_lst)):
+            col = col_lst[i]
+            p.line(df.index,df[col],legend=col,line_width=3,y_range_name=y_column2_range,color=palette[i],line_dash="dashed")
+            p.circle('index', col, size=7,color=palette[i],y_range_name=y_column2_range,source=source)
+    p.legend.location = "top_left"
+    p.toolbar.active_scroll=p.select_one(WheelZoomTool)
+    p.title.text_font_size='15pt'
+    p.title.align = 'center'
+    p.xaxis.axis_label_text_font_size='12pt'
+    p.yaxis.axis_label_text_font_size='12pt'
+    if outputFilePath.endswith('png'):
+        export_png(p, filename=outputFilePath)
+    else:
+        output_file(outputFilePath)
+        show(p)
+
+def h_bar_plot(bar_df,cat_col,num_col,sort_col,bottom_up=False,height=600,title='test',file_path='test.html'):
+    bar_df = bar_df.sort_values(by=sort_col,ascending=bottom_up)
+    cate=bar_df[cat_col].tolist()
+    num=bar_df[num_col].tolist()
+    p = figure(y_range=cate, plot_height=height, x_range=(min(num)-abs(min(num)*0.1), max(num)+abs(max(num)*0.1)), title=title,toolbar_location='right')
+    source = ColumnDataSource(data=dict(num=num, cate=cate))
+    color_map = LinearColorMapper(palette=viridis(len(set(num))), low=min(num), high=max(num))
+    p.hbar(y='cate', right='num', height=0.9,fill_color={'field': 'num', 'transform': color_map}, legend=None, source=source)
+    p.y_range.range_padding = 0.1
+    p.ygrid.grid_line_color = None
+    p.axis.minor_tick_line_color = None
+    p.outline_line_color = None
+    p.title.text_font_size='15pt'
+    p.title.align = 'center'
+    p.xaxis.axis_label_text_font_size='12pt'
+    p.yaxis.axis_label_text_font_size='12pt'
+    if file_path.endswith('png'):
+        export_png(p, filename=file_path)
+    else:
+        output_file(file_path)
+        show(p)
+
+def pca_transformation(gene_df_full,drode_de_gene):
+    pca_df = gene_df_full.copy()
+    pca_df['indices']=pca_df.index
+    temp_mx = dtm(pca_df,drode_de_gene,sort_column='indices')
+    temp_mx = scale_matrix(temp_mx,isrow=False,simple_scale=True)
+    pca_df = mtd(temp_mx,drode_de_gene,pca_df,['group','indices'], sort_column='indices',asc=True)
+    pca_df.index = pca_df['indices']
+    del pca_df['indices']
+    pca_df['cell']=pca_df.index
+    pca = PCA(n_components=5,random_state=0)
+    principalComponents = pca.fit_transform(pca_df[drode_de_gene])
+    principalDf = pd.DataFrame(data = principalComponents, columns = ['pc1', 'pc2','pc3','pc4','pc5'])
+    principalDf.index = pca_df.index
+    principalDf['group']=pca_df['group']
+    principalDf['cell']=principalDf.index
+    temp_df = pd.DataFrame(pca.components_).T
+    temp_df.columns= ['pc1', 'pc2','pc3','pc4','pc5']
+    temp_df.index = drode_de_gene
+    temp_df['gene']=temp_df.index
+    for i in ['pc1', 'pc2','pc3','pc4','pc5']:
+        temp_df[i+'_abs']=abs(temp_df[i])
+        temp_df = temp_df.sort_values(by=i+'_abs',ascending=False)
+        temp_df = temp_df.reset_index(drop=True)
+        temp_df['rank-'+i]=temp_df.index+1001
+        temp_df.loc[temp_df[i]>0,'status']='pos'
+        temp_df.loc[temp_df[i]<0,'status']='neg'
+        temp_df['rank-'+i]=temp_df['rank-'+i].astype(str)+'_'+i+'_'+temp_df['status']
+        del temp_df['status']
+    return principalDf,temp_df
+
