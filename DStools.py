@@ -6,6 +6,8 @@ import random
 import matplotlib
 import textwrap
 import scipy.spatial.distance as ssd
+from scipy.stats import ks_2samp
+from scipy.stats import entropy
 import warnings 
 from sklearn import tree
 from sklearn.manifold import TSNE
@@ -21,17 +23,25 @@ import re
 import math
 from os import listdir
 from bokeh.layouts import gridplot
-from bokeh.models import Range1d,LabelSet,Label,ColumnDataSource,HoverTool,WheelZoomTool,PanTool,BoxZoomTool,ResetTool,SaveTool,BasicTicker,ColorBar,LinearColorMapper,PrintfTickFormatter,DataSource
+from bokeh.models import LinearAxis,FactorRange,Range1d,LabelSet,Label,ColumnDataSource,HoverTool,WheelZoomTool,PanTool,BoxZoomTool,ResetTool,SaveTool,BasicTicker,ColorBar,LinearColorMapper,PrintfTickFormatter,DataSource
 from bokeh.palettes import brewer,inferno,magma,viridis,grey,Category10
 from bokeh.plotting import figure, show, output_file
 from bokeh.transform import transform,factor_cmap
 from bokeh.io import export_png
 from graphviz import Source
 from itertools import cycle
-
-warnings.simplefilter("error")
+from sklearn.decomposition import PCA
+import rpy2.robjects.packages as rpackages
+import rpy2.robjects as robjects
+import statsmodels.api as sm
+import re
+from PIL import Image 
+Image.warnings.simplefilter('ignore', Image.DecompressionBombWarning)
 warnings.filterwarnings('ignore', category=PendingDeprecationWarning) 
 warnings.filterwarnings('ignore', category=ResourceWarning) 
+warnings.filterwarnings('ignore', category=FutureWarning) 
+rstats = rpackages.importr('stats')
+warnings.simplefilter("error")
 
 #####print table#####
 def ppt(table,lines=30,maxWidth = 18,minWidth=10,keepDecimal=2,lineWidth=170):
