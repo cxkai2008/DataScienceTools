@@ -1344,7 +1344,7 @@ def de_gene_description(drode_de_gene_df):
     cate_lst = drode_de_gene_df_2['group_1'].unique().tolist()
     temp_mean_df = pd.pivot_table(drode_de_gene_df_2, index='gene', columns='group_2', values='posmean_2')
     temp_mean_df = temp_mean_df[cate_lst]
-    temp_mean_df['name']=temp_mean_df.index+'_expression_level'
+    temp_mean_df['name']=temp_mean_df.index+'_PELs'
     temp_mean_df.index=temp_mean_df['name']
     temp_mean_df=temp_mean_df.reset_index(drop=True)
     temp_mean_df = temp_mean_df.T
@@ -1353,7 +1353,7 @@ def de_gene_description(drode_de_gene_df):
     temp_mean_df.index = cate_lst
     temp_rate_df= pd.pivot_table(drode_de_gene_df_2, index='gene', columns='group_2', values='posrate_2')
     temp_rate_df = temp_rate_df[cate_lst]
-    temp_rate_df['name']=temp_rate_df.index+'_expression_rate'
+    temp_rate_df['name']=temp_rate_df.index+'_1-RUEs'
     temp_rate_df.index=temp_rate_df['name']
     temp_rate_df=temp_rate_df.reset_index(drop=True)
     temp_rate_df = temp_rate_df.T
@@ -1455,3 +1455,86 @@ def pca_transformation(gene_df_full,drode_de_gene):
         del temp_df['status']
     return principalDf,temp_df
 
+def generate_GE_heatmap_bilevel(gene_df,reordered_feature,reordered_feature_with_fakes,first_cate='newGroup',second_cate='cd4cd8',sort_col='Cd4',is_scale=True,path_file='/Users/xc2918/Desktop/Project2/Plot/test.html',font_size="30pt",x_size=25000,y_size=4500):
+    gene_heatmap= gene_df.copy()
+    reordered_cell=[]
+    fake_lst = ['fake-'+str(i) for i in range(100)]
+    fake_ftr= findDistinct(reordered_feature_with_fakes,reordered_feature)[0]
+    f_index=0
+    f_lst = gene_heatmap[first_cate].unique().tolist()
+    f_lst.sort()
+    if(is_scale):
+        gene_heatmap['indices']=gene_heatmap.index
+        temp_mx = dtm(gene_heatmap,reordered_feature,sort_column='indices')
+        temp_mx = scale_matrix(temp_mx,isrow=True,simple_scale=True)
+        gene_heatmap = mtd(temp_mx,reordered_feature,gene_heatmap,[first_cate,second_cate,'indices'], sort_column='indices',asc=True)
+        gene_heatmap.index = gene_heatmap['indices']
+        del gene_heatmap['indices']
+    for i in f_lst:
+        s_lst = gene_heatmap[gene_heatmap[first_cate]==i][second_cate].unique().tolist()
+        s_lst.sort()
+        for j in s_lst:
+            c_lst = gene_heatmap[(gene_df[first_cate]==i) & (gene_heatmap[second_cate]==j)].sort_values(by=sort_col, ascending=True).index.tolist()
+            reordered_cell=reordered_cell+c_lst
+            reordered_cell.append(fake_lst[f_index])
+            f_index=f_index+1
+        reordered_cell.append(fake_lst[f_index])
+        f_index=f_index+1
+        reordered_cell.append(fake_lst[f_index])
+        f_index=f_index+1
+        reordered_cell.append(fake_lst[f_index])
+        f_index=f_index+1
+        reordered_cell.append(fake_lst[f_index])
+        f_index=f_index+1
+    for i in range(f_index):
+        gene_heatmap.loc[fake_lst[i]]=np.nan
+    gene_heatmap = gene_heatmap.loc[reordered_cell]
+    for i in fake_ftr:
+        gene_heatmap[i]=np.nan
+    index_list = [i[2]+'__'+i[1]+'__'+str(i[0]) for i in zip(reordered_cell,gene_heatmap.loc[reordered_cell]['group'].astype(str).values.tolist(),gene_heatmap.loc[reordered_cell][second_cate].astype(str).values.tolist())]
+    gene_heatmap.index = index_list
+    heatMap(gene_heatmap[reordered_feature_with_fakes].T[index_list],x_size=x_size,y_size=y_size,path_file=path_file,font_size=font_size)
+
+def generate_GE_heatmap_onelevel(gene_df,reordered_feature,reordered_feature_with_fakes,print_cate='group',print_cateb='group',second_cate='cd4cd8',sort_col='Cd4',is_scale=True,path_file='/Users/xc2918/Desktop/Project2/Plot/test.html',x_size=6000,y_size=4500,font_size="15pt"):
+    gene_heatmap= gene_df.copy()
+    reordered_cell=[]
+    fake_lst = ['fake-'+str(i) for i in range(100)]
+    fake_ftr= findDistinct(reordered_feature_with_fakes,reordered_feature)[0]
+    f_index=0
+    if(is_scale):
+        gene_heatmap['indices']=gene_heatmap.index
+        temp_mx = dtm(gene_heatmap,reordered_feature,sort_column='indices')
+        temp_mx = scale_matrix(temp_mx,isrow=True,simple_scale=True)
+        gene_heatmap = mtd(temp_mx,reordered_feature,gene_heatmap,[first_cate,second_cate,'indices'], sort_column='indices',asc=True)
+        gene_heatmap.index = gene_heatmap['indices']
+        del gene_heatmap['indices']
+    s_lst = gene_heatmap[second_cate].unique().tolist()
+    s_lst.sort()
+    for j in s_lst:
+        c_lst = gene_heatmap[gene_heatmap[second_cate]==j].sort_values(by=sort_col, ascending=True).index.tolist()
+        reordered_cell=reordered_cell+c_lst
+        reordered_cell.append(fake_lst[f_index])
+        f_index=f_index+1
+    for i in range(f_index):
+        gene_heatmap.loc[fake_lst[i]]=np.nan
+    gene_heatmap = gene_heatmap.loc[reordered_cell]
+    for i in fake_ftr:
+        gene_heatmap[i]=np.nan
+    index_list = [i[2]+'__'+i[1]+'__'+str(i[0]) for i in zip(reordered_cell,gene_heatmap.loc[reordered_cell][print_cateb].astype(str).values.tolist(),gene_heatmap.loc[reordered_cell][print_cate].astype(str).values.tolist())]
+    gene_heatmap.index = index_list
+    heatMap(gene_heatmap[reordered_feature_with_fakes].T[index_list],x_size=x_size,y_size=y_size,path_file=path_file,font_size=font_size)
+
+def generate_GE_heatmap_nonlevel(gene_df,reordered_feature,reordered_feature_with_fakes,is_scale=False,path_file='/Users/xc2918/Desktop/Project2/Plot/test.html',x_size=1000,y_size=2000,font_size="15pt"):
+    gene_heatmap= gene_df.copy()
+    fake_lst = ['fake-'+str(i) for i in range(100)]
+    fake_ftr= findDistinct(reordered_feature_with_fakes,reordered_feature)[0]
+    if(is_scale):
+        gene_heatmap['indices']=gene_heatmap.index
+        temp_mx = dtm(gene_heatmap,reordered_feature,sort_column='indices')
+        temp_mx = scale_matrix(temp_mx,isrow=True,simple_scale=True)
+        gene_heatmap = mtd(temp_mx,reordered_feature,gene_heatmap,['indices'], sort_column='indices',asc=True)
+        gene_heatmap.index = gene_heatmap['indices']
+        del gene_heatmap['indices']
+    for i in fake_ftr:
+        gene_heatmap[i]=np.nan
+    heatMap(gene_heatmap[reordered_feature_with_fakes].T,x_size=x_size,y_size=y_size,path_file=path_file,font_size=font_size)
