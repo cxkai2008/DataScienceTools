@@ -6,7 +6,7 @@ There are novel and powerful tools in this script, such as feature importance ca
 
 Please notice: These tools are developed as references of solution for different data science use cases. Many of these tools are built based on packages like pandas, numpy, sci-learn, bokeh etc. Thus, please refer to the licences of the specific packages when using these tools.
 
-An example of the application of these tools can be found in Example.ipynb and Example.html, the detailed introduction of each function is listed as below:
+An example of the application of these tools can be found in Example.ipynb and Example.html, the pipeline I used in the second project can be found in pipeline.ipynb and pipeline.R. The detailed introduction of each function is listed as below:
 
 ## DATA DISPLAY TOOLS
 ### Print data frame in a customised way. 
