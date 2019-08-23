@@ -293,6 +293,7 @@ The data is transformed into a entropy distance matrix before clustering. The ot
 ```
 cluster_cells(gene_dfc,select_gene,group='CD4SP',group_col='group',id_col='cell',path='/home/ivan/Desktop/Project2/MyData/pipeline')
 ```
+
 ## PLOTTING TOOLS
 ### Plot heatmap based on a similarity(or distance) data frame. 
 * corrDF: the input similarity dataframe(row size equals to column size), the values ranged from -1 to 1
@@ -311,25 +312,23 @@ plotHeatMap(corrDF=DF.corr() , featureList=['1','2','3'],path_file='/abc/abc/hea
 heatMap(DF,x_size=9000,y_size=4500,path_file='/abc/abc/heatmap.html',font_size='15pt')
 ```
 ### Plot row-separated heatmap based on a numeric data frame. 
+Plot a heatmap using the columns(features) of gene_df as rows of the heatmap, the columns are separated based on their characteristics of PCA. In details, features are classified into groups such as PC1_pos and PC2_neg. For example, PC1_pos means that the features in this group contribute to PC1 more than other PCs, furthermore, their contribution to PC1 is positive. The rows of gene_df comprise the columns of the heatmap.
 * gene_df: the input numeric dataframe, it is better to scale the DF before plotting the heat map
-* reordered_feature: the features used for plotting the heatmap, for example:['a','b','c']
-* reordered_feature_with_fakes: the features are separated by categories in this list, the categories should not be included in the features. for example: ['a','cate1','b','c','cate2']
+* features: the features used for plotting the heatmap, for example:['a','b','c']
 * is_scale: scale the gene_df or not
 * x_size: the width of the plot, the more columns that DF has, the larger x_size should be
 * y_size: the height of the plot, the more row that DF has, the larger y_size should be
 * path_file: the storing path and the file name should end with '.png'(There are more packages, such as phantomjs, needed to be installed if you want to have png output file) or '.html'(this is an easier solution)
 * font_size: the font size of the labels.
 ```
-generate_GE_heatmap_nonlevel(gene_df, reordered_feature, reordered_feature_with_fakes, is_scale=False, path_file='/Users/xc2918/Desktop/Project2/Plot/test.html', x_size=1000,y_size=2000,font_size="15pt")
+generate_GE_heatmap_nonlevel(gene_df,features,is_scale=False,path_file='/home/ivan/Desktop/Project2/Plot/test.html',x_size=1000,y_size=2000,font_size="15pt")
 ```
 ### Plot row-separated and column-separated(one level) heatmap based on a numeric data frame. 
-The samples in the gene_df comprise the columns of the heat map, the features in "reordered_feature" comprise the rows of the heat map. The columns are grouped by "second_cate" and sorted by "sort_col". The rows are separated by the categories in the "reordered_feature_with_fakes".
+Plot a heatmap using the columns(features) of gene_df as rows of the heatmap, the columns are separated based on their characteristics of PCA. In details, features are classified into groups such as PC1_pos and PC2_neg. For example, PC1_pos means that the features in this group contribute to PC1 more than other PCs, furthermore, their contribution to PC1 is positive. The rows of gene_df comprise the columns of the heatmap. The columns of the heat map are grouped by "first_cate" and sorted by "sort_col".
 * gene_df: the input numeric dataframe, it is better to scale the DF before plotting the heat map
-* reordered_feature: the features used for plotting the heatmap, for example:['a','b','c']
-* reordered_feature_with_fakes: the features are separated by categories in this list, the categories should not be included in the features. for example: ['a','cate1','b','c','cate2']
+* features: the features used for plotting the heatmap, for example:['a','b','c']
 * print_cate: The column which is used as part of the sample name in the heat map.
-* print_cateb: The other column which is used as part of the sample name in the heat map.
-* second_cate: the column used to group samples, for example: category
+* first_cate: the column used to group samples, for example: category
 * sort_col: the column used to rank the samples in each category.
 * is_scale: scale the gene_df or not
 * x_size: the width of the plot, the more columns that DF has, the larger x_size should be
@@ -337,14 +336,14 @@ The samples in the gene_df comprise the columns of the heat map, the features in
 * path_file: the storing path and the file name should end with '.png'(There are more packages, such as phantomjs, needed to be installed if you want to have png output file) or '.html'(this is an easier solution)
 * font_size: the font size of the labels.
 ```
-generate_GE_heatmap_onelevel(gene_df, reordered_feature, reordered_feature_with_fakes, print_cate='group', print_cateb='group',second_cate='cd4cd8',sort_col='Cd4',is_scale=True,path_file='/Users/xc2918/Desktop/Project2/Plot/test.html', x_size=6000, y_size=4500,font_size="15pt")
+generate_GE_heatmap_onelevel(gene_df,features,first_cate='newGroup',print_cate='group',sort_col='CD4',is_scale=True,path_file='/home/ivan/Desktop/Project2/Plot/test.html',x_size=6000,y_size=4500,font_size="15pt")
 ```
 ### Plot row-separated and column-separated(two level) heatmap based on a numeric data frame. 
-The samples in the gene_df comprise the columns of the heat map, the features in "reordered_feature" comprise the rows of the heat map. The columns are grouped by "first_cate" and "second_cate" and sorted by "sort_col". The rows are separated by the categories in the "reordered_feature_with_fakes".
+Plot a heatmap using the columns(features) of gene_df as rows of the heatmap, the columns are separated based on their characteristics of PCA. In details, features are classified into groups such as PC1_pos and PC2_neg. For example, PC1_pos means that the features in this group contribute to PC1 more than other PCs, furthermore, their contribution to PC1 is positive. The rows of gene_df comprise the columns of the heatmap. The columns of the heat map are grouped by "first_cate" and "second_cate" and then sorted by "sort_col".
 * gene_df: the input numeric dataframe, it is better to scale the DF before plotting the heat map
-* reordered_feature: the features used for plotting the heatmap, for example:['a','b','c']
-* reordered_feature_with_fakes: the features are separated by categories in this list, the categories should not be included in the features. for example: ['a','cate1','b','c','cate2']
+* features: the features used for plotting the heatmap, for example:['a','b','c']
 * first_cate: the column used to group samples in the first level, for example: general category
+* print_cate: The column which is used as part of the sample name instead of first_cate in the heat map.
 * second_cate: the column used to group samples in the second level, for example: sub category
 * sort_col: the column used to rank the samples in each second category
 * is_scale: scale the gene_df or not
@@ -353,7 +352,7 @@ The samples in the gene_df comprise the columns of the heat map, the features in
 * path_file: the storing path and the file name should end with '.png'(There are more packages, such as phantomjs, needed to be installed if you want to have png output file) or '.html'(this is an easier solution)
 * font_size: the font size of the labels.
 ```
-generate_GE_heatmap_bilevel(gene_df,reordered_feature, reordered_feature_with_fakes, first_cate='newGroup', second_cate='cd4cd8',sort_col='Cd4',is_scale=True,path_file='/Users/xc2918/Desktop/Project2/Plot/test.html',font_size="30pt",x_size=25000,y_size=4500)
+generate_GE_heatmap_bilevel(gene_df,features,first_cate='newGroup',print_cate='group',second_cate='cd4cd8',sort_col='CD4',is_scale=True,path_file='/home/ivan/Desktop/Project2/Plot/test.html',font_size="30pt",x_size=25000,y_size=4500)
 ```
 ### Plot histogram based on a list of values. 
 * 'title': the title of histogram 

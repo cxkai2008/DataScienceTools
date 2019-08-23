@@ -1455,7 +1455,8 @@ def pca_transformation(gene_df_full,drode_de_gene):
         del temp_df['status']
     return principalDf,temp_df
 
-def generate_GE_heatmap_bilevel(gene_df,reordered_feature,reordered_feature_with_fakes,first_cate='newGroup',second_cate='cd4cd8',sort_col='Cd4',is_scale=True,path_file='/Users/xc2918/Desktop/Project2/Plot/test.html',font_size="30pt",x_size=25000,y_size=4500):
+def generate_GE_heatmap_bilevel(gene_df,features,first_cate='newGroup',print_cate='group',second_cate='cd4cd8',sort_col='CD4',is_scale=True,path_file='/home/ivan/Desktop/Project2/Plot/test.html',font_size="30pt",x_size=25000,y_size=4500):
+    reordered_feature,reordered_feature_with_fakes=generate_fake_ordered_features(gene_df,features,n=3)
     gene_heatmap= gene_df.copy()
     reordered_cell=[]
     fake_lst = ['fake-'+str(i) for i in range(100)]
@@ -1467,7 +1468,7 @@ def generate_GE_heatmap_bilevel(gene_df,reordered_feature,reordered_feature_with
         gene_heatmap['indices']=gene_heatmap.index
         temp_mx = dtm(gene_heatmap,reordered_feature,sort_column='indices')
         temp_mx = scale_matrix(temp_mx,isrow=True,simple_scale=True)
-        gene_heatmap = mtd(temp_mx,reordered_feature,gene_heatmap,[first_cate,second_cate,'indices'], sort_column='indices',asc=True)
+        gene_heatmap = mtd(temp_mx,reordered_feature,gene_heatmap,[first_cate,second_cate,print_cate,'indices'], sort_column='indices',asc=True)
         gene_heatmap.index = gene_heatmap['indices']
         del gene_heatmap['indices']
     for i in f_lst:
@@ -1491,11 +1492,12 @@ def generate_GE_heatmap_bilevel(gene_df,reordered_feature,reordered_feature_with
     gene_heatmap = gene_heatmap.loc[reordered_cell]
     for i in fake_ftr:
         gene_heatmap[i]=np.nan
-    index_list = [i[2]+'__'+i[1]+'__'+str(i[0]) for i in zip(reordered_cell,gene_heatmap.loc[reordered_cell]['group'].astype(str).values.tolist(),gene_heatmap.loc[reordered_cell][second_cate].astype(str).values.tolist())]
+    index_list = [i[2]+'__'+i[1]+'__'+str(i[0]) for i in zip(reordered_cell,gene_heatmap.loc[reordered_cell][print_cate].astype(str).values.tolist(),gene_heatmap.loc[reordered_cell][second_cate].astype(str).values.tolist())]
     gene_heatmap.index = index_list
     heatMap(gene_heatmap[reordered_feature_with_fakes].T[index_list],x_size=x_size,y_size=y_size,path_file=path_file,font_size=font_size)
 
-def generate_GE_heatmap_onelevel(gene_df,reordered_feature,reordered_feature_with_fakes,print_cate='group',print_cateb='group',second_cate='cd4cd8',sort_col='Cd4',is_scale=True,path_file='/Users/xc2918/Desktop/Project2/Plot/test.html',x_size=6000,y_size=4500,font_size="15pt"):
+def generate_GE_heatmap_onelevel(gene_df,features,first_cate='newGroup',print_cate='group',sort_col='CD4',is_scale=True,path_file='/home/ivan/Desktop/Project2/Plot/test.html',x_size=6000,y_size=4500,font_size="15pt"):
+    reordered_feature,reordered_feature_with_fakes=generate_fake_ordered_features(gene_df,features,n=3)
     gene_heatmap= gene_df.copy()
     reordered_cell=[]
     fake_lst = ['fake-'+str(i) for i in range(100)]
@@ -1505,13 +1507,13 @@ def generate_GE_heatmap_onelevel(gene_df,reordered_feature,reordered_feature_wit
         gene_heatmap['indices']=gene_heatmap.index
         temp_mx = dtm(gene_heatmap,reordered_feature,sort_column='indices')
         temp_mx = scale_matrix(temp_mx,isrow=True,simple_scale=True)
-        gene_heatmap = mtd(temp_mx,reordered_feature,gene_heatmap,[first_cate,second_cate,'indices'], sort_column='indices',asc=True)
+        gene_heatmap = mtd(temp_mx,reordered_feature,gene_heatmap,[first_cate,print_cate,'indices'], sort_column='indices',asc=True)
         gene_heatmap.index = gene_heatmap['indices']
         del gene_heatmap['indices']
-    s_lst = gene_heatmap[second_cate].unique().tolist()
+    s_lst = gene_heatmap[first_cate].unique().tolist()
     s_lst.sort()
     for j in s_lst:
-        c_lst = gene_heatmap[gene_heatmap[second_cate]==j].sort_values(by=sort_col, ascending=True).index.tolist()
+        c_lst = gene_heatmap[gene_heatmap[first_cate]==j].sort_values(by=sort_col, ascending=True).index.tolist()
         reordered_cell=reordered_cell+c_lst
         reordered_cell.append(fake_lst[f_index])
         f_index=f_index+1
@@ -1520,11 +1522,12 @@ def generate_GE_heatmap_onelevel(gene_df,reordered_feature,reordered_feature_wit
     gene_heatmap = gene_heatmap.loc[reordered_cell]
     for i in fake_ftr:
         gene_heatmap[i]=np.nan
-    index_list = [i[2]+'__'+i[1]+'__'+str(i[0]) for i in zip(reordered_cell,gene_heatmap.loc[reordered_cell][print_cateb].astype(str).values.tolist(),gene_heatmap.loc[reordered_cell][print_cate].astype(str).values.tolist())]
+    index_list = [i[2]+'__'+i[1]+'__'+str(i[0]) for i in zip(reordered_cell,gene_heatmap.loc[reordered_cell][first_cate].astype(str).values.tolist(),gene_heatmap.loc[reordered_cell][print_cate].astype(str).values.tolist())]
     gene_heatmap.index = index_list
     heatMap(gene_heatmap[reordered_feature_with_fakes].T[index_list],x_size=x_size,y_size=y_size,path_file=path_file,font_size=font_size)
 
-def generate_GE_heatmap_nonlevel(gene_df,reordered_feature,reordered_feature_with_fakes,is_scale=False,path_file='/Users/xc2918/Desktop/Project2/Plot/test.html',x_size=1000,y_size=2000,font_size="15pt"):
+def generate_GE_heatmap_nonlevel(gene_df,features,is_scale=False,path_file='/home/ivan/Desktop/Project2/Plot/test.html',x_size=1000,y_size=2000,font_size="15pt"):
+    reordered_feature,reordered_feature_with_fakes=generate_fake_ordered_features(gene_df,features,n=3)
     gene_heatmap= gene_df.copy()
     fake_lst = ['fake-'+str(i) for i in range(100)]
     fake_ftr= findDistinct(reordered_feature_with_fakes,reordered_feature)[0]
@@ -1538,3 +1541,42 @@ def generate_GE_heatmap_nonlevel(gene_df,reordered_feature,reordered_feature_wit
     for i in fake_ftr:
         gene_heatmap[i]=np.nan
     heatMap(gene_heatmap[reordered_feature_with_fakes].T,x_size=x_size,y_size=y_size,path_file=path_file,font_size=font_size)
+
+def generate_fake_ordered_features(plot_df,features,n=3):
+    pclst=['pc'+str(i) for i in range(1,n+1)]
+    abslst=['pc'+str(i)+'_abs' for i in range(1,n+1)]
+    pca=PCA(n_components=n)
+    pca.fit_transform(plot_df[features])
+    temp_df = pd.DataFrame(pca.components_).T
+    temp_df.columns= pclst
+    temp_df.index = features
+    temp_df['index']=temp_df.index
+    for i in pclst:
+        temp_df[i+'_abs']=abs(temp_df[i])
+        temp_df = temp_df.sort_values(by=i+'_abs',ascending=False)
+        temp_df = temp_df.reset_index(drop=True)
+        temp_df['rank-'+i]=temp_df.index+1000001
+        temp_df.loc[temp_df[i]>0,'status']='pos'
+        temp_df.loc[temp_df[i]<0,'status']='neg'
+        temp_df['rank-'+i]=temp_df['rank-'+i].astype(str)+'_'+i+'_'+temp_df['status']
+        del temp_df['status']
+    new_df = temp_df[['index']+pclst+abslst].copy()
+    new_df.index=new_df['index']
+    del new_df['index']
+    new_df['max'] = np.array(new_df[abslst].T.describe().T['max'].tolist())
+    marker_filter = pd.notnull(new_df['max'])
+    cate_lst=[]
+    for i in pclst:
+        new_df.loc[(new_df['max']==abs(new_df[i])) & marker_filter & (new_df[i]>=0),'markers']=i+'_pos'
+        new_df.loc[(new_df['max']==abs(new_df[i])) & marker_filter & (new_df[i]<0),'markers']=i+'_neg'
+        cate_lst=cate_lst+[i+'_pos',i+'_neg']
+    new_df=new_df.sort_values(by=['markers','max'],ascending=[True,True])
+    pc_cate_features=[]
+    pc_features=[]
+    for i in cate_lst:
+        filter_i = new_df['markers']==i
+        g_lst = new_df[filter_i].index.tolist()
+        pc_features = g_lst+pc_features
+        g_lst = [i]+g_lst
+        pc_cate_features= g_lst + pc_cate_features
+    return pc_features,pc_cate_features
